@@ -1,6 +1,6 @@
 # FileFlow
 
-![CI](https://github.com/<TU_USUARIO>/<REPO_NAME>/actions/workflows/deploy-client.yml/badge.svg)
+![CI](https://github.com/dherrera-software/FileFlow/actions/workflows/deploy-client.yml/badge.svg)
 ![Backend](https://img.shields.io/badge/backend-Render-blue)
 ![Frontend](https://img.shields.io/badge/frontend-GitHub%20Pages-green)
 ![Node](https://img.shields.io/badge/node-%3E%3D20.0.0-brightgreen)

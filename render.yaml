@@ -12,7 +12,7 @@ services:
       - key: PORT
         value: 10000
       - key: CLIENT_URL
-        value: https://<TU_USUARIO>.github.io/FileFlow
+        value: https://dherrera-software.github.io/FileFlow
       - key: MAX_FILE_SIZE_MB
         value: 25
       - key: FILE_CLEANUP_MINUTES
