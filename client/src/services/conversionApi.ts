@@ -1,4 +1,11 @@
-const API_BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:3000').replace(/\/$/, '');
+const RAW_URL = (
+  import.meta.env.VITE_API_BASE_URL ||
+  import.meta.env.VITE_API_URL ||
+  'http://localhost:3000'
+).replace(/\/$/, '');
+
+// Normaliza para que siempre apunte al endpoint base de la API (/api)
+export const API_BASE_URL = RAW_URL.endsWith('/api') ? RAW_URL : `${RAW_URL}/api`;
 
 export interface ConversionResponse {
   blob: Blob;
@@ -15,7 +22,7 @@ export async function convertAndDownload(file: File, targetFormat: string): Prom
 
   let response: Response;
   try {
-    response = await fetch(`${API_BASE_URL}/api/convert`, {
+    response = await fetch(`${API_BASE_URL}/convert`, {
       method: 'POST',
       body: formData,
     });
@@ -75,7 +82,7 @@ export async function convertAndDownload(file: File, targetFormat: string): Prom
  */
 export async function checkBackendHealth(): Promise<boolean> {
   try {
-    const res = await fetch(`${API_BASE_URL}/api/health`);
+    const res = await fetch(`${API_BASE_URL}/health`);
     return res.ok;
   } catch {
     return false;

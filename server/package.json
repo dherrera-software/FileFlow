@@ -2,8 +2,10 @@
   "name": "fileflow-server",
   "version": "1.0.0",
   "description": "Production-ready backend for FileFlow file conversion",
+  "packageManager": "pnpm@10.31.0",
   "engines": {
-    "node": ">=20.0.0"
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
   },
   "main": "dist/server.js",
   "scripts": {
