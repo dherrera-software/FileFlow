@@ -16,5 +16,10 @@
     "build:client": "pnpm --filter fileflow-client build",
     "build:server": "pnpm --filter fileflow-server build",
     "lint": "pnpm --filter fileflow-client lint"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "ffmpeg-static"
+    ]
   }
 }
