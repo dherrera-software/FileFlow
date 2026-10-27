@@ -90,32 +90,154 @@ async function convertWithOfficeCOM(
 }
 
 /**
- * Fallback to LibreOffice if available on system.
+ * Resolves the LibreOffice/soffice executable binary path.
+ */
+function getLibreOfficeBinaryPath(): string | null {
+  const possiblePaths = [
+    process.env.LIBREOFFICE_PATH,
+    process.env.SOFFICE_PATH,
+    '/usr/bin/libreoffice',
+    '/usr/bin/soffice',
+    '/snap/bin/libreoffice',
+    '/opt/libreoffice/program/soffice',
+    'C:\\Program Files\\LibreOffice\\program\\soffice.exe',
+    'C:\\Program Files (x86)\\LibreOffice\\program\\soffice.exe',
+  ].filter(Boolean) as string[];
+
+  for (const p of possiblePaths) {
+    if (fsSync.existsSync(p)) {
+      return p;
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Direct headless LibreOffice CLI execution via child_process.execFile.
+ * Provides high reliability, custom arguments (such as writer_pdf_import for PDF->DOCX),
+ * and avoids in-memory buffer overhead for large files.
+ */
+async function convertWithLibreOfficeCli(
+  binaryPath: string,
+  inputPath: string,
+  outputPath: string,
+  sourceFormat: string,
+  targetFormat: string,
+): Promise<void> {
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'libreoffice-'));
+  const tempInput = path.join(tempDir, `doc_${Date.now()}.${sourceFormat}`);
+
+  try {
+    await fs.copyFile(inputPath, tempInput);
+
+    const args = [
+      '--headless',
+      '--invisible',
+      '--nodefault',
+      '--nofirststartwizard',
+      '--nolockcheck',
+      '--nologo',
+    ];
+
+    // For PDF to Word/text document conversions, force Writer's PDF import filter
+    if (sourceFormat === 'pdf' && ['docx', 'doc', 'odt', 'rtf', 'txt'].includes(targetFormat)) {
+      args.push('--infilter=writer_pdf_import');
+    }
+
+    args.push('--convert-to', targetFormat, '--outdir', tempDir, tempInput);
+
+    const { stdout, stderr } = await execFileAsync(binaryPath, args, { timeout: 120000 });
+
+    const files = await fs.readdir(tempDir);
+    const generatedFile = files.find(
+      (f) => f.startsWith('doc_') && f.endsWith(`.${targetFormat}`)
+    );
+
+    if (!generatedFile) {
+      throw new Error(
+        `LibreOffice CLI executed but did not generate the .${targetFormat} output file. stdout: ${stdout || '(none)'}, stderr: ${stderr || '(none)'}`,
+      );
+    }
+
+    await fs.copyFile(path.join(tempDir, generatedFile), outputPath);
+  } finally {
+    await fs.rm(tempDir, { recursive: true, force: true }).catch(() => {});
+  }
+}
+
+/**
+ * Convert office documents using LibreOffice (direct CLI or libreoffice-convert fallback).
  */
 async function convertWithLibreOffice(
   inputPath: string,
   outputPath: string,
+  sourceFormat: string,
   targetFormat: string,
 ): Promise<void> {
+  const binary = getLibreOfficeBinaryPath();
+
+  // 1. Try direct CLI execution if a binary is found or in Linux environment
+  if (binary) {
+    try {
+      await convertWithLibreOfficeCli(binary, inputPath, outputPath, sourceFormat, targetFormat);
+      return;
+    } catch (cliErr: any) {
+      console.warn(
+        `[Conversion] Direct LibreOffice CLI attempt failed: ${cliErr.message}. Trying libreoffice-convert fallback...`,
+      );
+    }
+  }
+
+  // 2. Fallback to libreoffice-convert library
   try {
     const libre = await import('libreoffice-convert');
+    const libreConvertWithOptions = (libre as any).convertWithOptions || libre.default?.convertWithOptions;
     const libreConvert = libre.default?.convert || (libre as any).convert;
 
-    if (!libreConvert) {
+    if (!libreConvert && !libreConvertWithOptions) {
       throw new Error('LibreOffice convert library could not be loaded');
     }
 
     const inputBuffer = await fs.readFile(inputPath);
     const convertedBuffer = await new Promise<Buffer>((resolve, reject) => {
-      libreConvert(inputBuffer, `.${targetFormat}`, undefined, (err: Error | null, done: Buffer) => {
-        if (err) return reject(err);
-        resolve(done);
-      });
+      const options = {
+        fileName: `document.${sourceFormat}`,
+        sofficeBinaryPaths: binary ? [binary] : undefined,
+        sofficeAdditionalArgs:
+          sourceFormat === 'pdf' && ['docx', 'doc', 'odt', 'rtf', 'txt'].includes(targetFormat)
+            ? ['--infilter=writer_pdf_import']
+            : [],
+      };
+
+      if (libreConvertWithOptions) {
+        libreConvertWithOptions(
+          inputBuffer,
+          `.${targetFormat}`,
+          undefined,
+          options,
+          (err: Error | null, done: Buffer) => {
+            if (err) return reject(err);
+            resolve(done);
+          },
+        );
+      } else {
+        libreConvert(inputBuffer, `.${targetFormat}`, undefined, (err: Error | null, done: Buffer) => {
+          if (err) return reject(err);
+          resolve(done);
+        });
+      }
     });
 
     await fs.writeFile(outputPath, convertedBuffer);
   } catch (error: any) {
-    throw new Error('Conversion engine not installed on this server');
+    console.error(
+      `[Conversion Error: LibreOffice] Failed to convert ${sourceFormat} to ${targetFormat}:`,
+      error,
+    );
+    throw new Error(
+      `Conversion engine error for ${sourceFormat} -> ${targetFormat}: ${error?.message || error}`,
+    );
   }
 }
 
@@ -137,7 +259,7 @@ async function convertOfficeDocuments(
     }
   }
 
-  await convertWithLibreOffice(inputPath, outputPath, targetFormat);
+  await convertWithLibreOffice(inputPath, outputPath, sourceFormat, targetFormat);
 }
 
 /**

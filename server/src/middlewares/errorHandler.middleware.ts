@@ -8,6 +8,8 @@ export function errorHandler(
   res: Response,
   _next: NextFunction,
 ) {
+  console.error('[Global Error Handler]:', err);
+
   if (err instanceof multer.MulterError) {
     if (err.code === 'LIMIT_FILE_SIZE') {
       res.status(413).json({

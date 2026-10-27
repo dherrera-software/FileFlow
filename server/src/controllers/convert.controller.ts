@@ -71,13 +71,18 @@ export async function convertController(
       }
     });
   } catch (error: any) {
+    console.error(`[Conversion Controller Error] (${sourceExt} -> ${targetExt}):`, error);
+
     // Clean up input file and failed output file if created
     await fs.unlink(uploadedFile.path).catch(() => {});
     await fs.unlink(outputPath).catch(() => {});
 
     const errorMsg = error?.message || 'Conversion failed';
-    if (errorMsg.includes('Conversion engine not installed on this server')) {
-      res.status(500).json({ error: 'Conversion engine not installed on this server' });
+    if (
+      errorMsg.includes('Conversion engine not installed on this server') ||
+      errorMsg.includes('Conversion engine error')
+    ) {
+      res.status(500).json({ error: errorMsg });
       return;
     }
 
