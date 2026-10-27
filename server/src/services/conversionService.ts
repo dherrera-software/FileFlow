@@ -32,17 +32,25 @@ function getPowerShellScriptPath(): string {
 }
 
 /**
- * Configure fluent-ffmpeg with ffmpeg-static binary
+ * Configure fluent-ffmpeg with the system FFmpeg binary.
  */
 async function getFfmpeg() {
-  const ffmpegStatic = await import('ffmpeg-static');
-  const ffmpegPath = (ffmpegStatic as any).default || ffmpegStatic;
   const fluentModule = await import('fluent-ffmpeg');
   const ffmpeg = (fluentModule as any).default || fluentModule;
 
-  if (ffmpegPath) {
-    ffmpeg.setFfmpegPath(ffmpegPath as string);
+  // Configure explicit system path (/usr/bin/ffmpeg) if present, or use global PATH
+  if (process.env.FFMPEG_PATH) {
+    ffmpeg.setFfmpegPath(process.env.FFMPEG_PATH);
+  } else if (fsSync.existsSync('/usr/bin/ffmpeg')) {
+    ffmpeg.setFfmpegPath('/usr/bin/ffmpeg');
   }
+
+  if (process.env.FFPROBE_PATH) {
+    ffmpeg.setFfprobePath(process.env.FFPROBE_PATH);
+  } else if (fsSync.existsSync('/usr/bin/ffprobe')) {
+    ffmpeg.setFfprobePath('/usr/bin/ffprobe');
+  }
+
   return ffmpeg;
 }
 
