@@ -1,14 +1,14 @@
 {
-  "name": "fileflow",
+  "name": "fileflow-client",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "scripts": {
     "dev": "vite",
-    "dev:frontend": "vite",
-    "dev:backend": "npm --prefix backend run dev",
     "build": "tsc -b && vite build",
-    "build:backend": "npm --prefix backend run build",
     "lint": "eslint .",
     "preview": "vite preview"
   },

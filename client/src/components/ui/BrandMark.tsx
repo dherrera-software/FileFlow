@@ -1,4 +1,4 @@
-import { cn } from '../../lib/cn'
+import { cn } from '../../utils/cn'
 
 /**
  * Two overlapping pages: the front sheet takes the accent, the back one stays

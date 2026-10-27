@@ -1,4 +1,4 @@
-import { FAQ_ITEMS } from '../lib/content'
+import { FAQ_ITEMS } from '../utils/content'
 
 export function FaqSection() {
   return (

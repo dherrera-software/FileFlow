@@ -1,4 +1,4 @@
-import { BRAND, HOW_IT_WORKS_STEPS } from '../lib/content'
+import { BRAND, HOW_IT_WORKS_STEPS } from '../utils/content'
 
 export function HowItWorks() {
   return (

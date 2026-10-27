@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { CircleAlert, Download, FileUp, X } from 'lucide-react'
-import { cn } from '../lib/cn'
+import { cn } from '../utils/cn'
 import type { ConverterController } from '../hooks/useConverter'
 import {
   ACCEPTED_EXTENSIONS,
@@ -9,8 +9,8 @@ import {
   SUPPORTED_FORMATS,
   FORMAT_CATEGORY_MAP,
   formatFileSize,
-} from '../lib/formats'
-import type { FormatCategory } from '../lib/formats'
+} from '../utils/formats'
+import type { FormatCategory } from '../utils/formats'
 import { Button } from './ui/Button'
 import { FormatBadge } from './ui/FormatBadge'
 import { ConversionOptions } from './ConversionOptions'

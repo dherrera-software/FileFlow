@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import type { ConversionPair, FormatCategory } from '../lib/formats'
-import { POPULAR_CONVERSIONS, FORMAT_CATEGORY_MAP } from '../lib/formats'
+import type { ConversionPair, FormatCategory } from '../utils/formats'
+import { POPULAR_CONVERSIONS, FORMAT_CATEGORY_MAP } from '../utils/formats'
 import { ConverterCard } from './ConverterCard'
-import { cn } from '../lib/cn'
+import { cn } from '../utils/cn'
 
 type PopularConversionsProps = {
   onSelectPair: (pair: ConversionPair) => void

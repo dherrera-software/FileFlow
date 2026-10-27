@@ -1,5 +1,5 @@
 import type { ButtonHTMLAttributes } from 'react'
-import { cn } from '../../lib/cn'
+import { cn } from '../../utils/cn'
 
 export type ButtonVariant = 'primary' | 'secondary' | 'dark' | 'ghost'
 export type ButtonSize = 'sm' | 'md' | 'lg'

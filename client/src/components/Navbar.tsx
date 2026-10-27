@@ -1,5 +1,5 @@
 import { Moon, Sun } from 'lucide-react'
-import { BRAND, FOOTER_COLUMNS, NAV_LINKS } from '../lib/content'
+import { BRAND, FOOTER_COLUMNS, NAV_LINKS } from '../utils/content'
 import { useTheme } from '../hooks/useTheme'
 import { BrandMark } from './ui/BrandMark'
 

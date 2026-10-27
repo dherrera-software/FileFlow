@@ -3,7 +3,7 @@ import cors from 'cors';
 import { CONFIG } from './config.js';
 import healthRouter from './routes/health.route.js';
 import convertRouter from './routes/convert.route.js';
-import { errorHandler } from './middleware/errorHandler.middleware.js';
+import { errorHandler } from './middlewares/errorHandler.middleware.js';
 
 export const app = express();
 

@@ -1,5 +1,5 @@
 import { ArrowRight, Info, X } from 'lucide-react'
-import { CONVERSION_NOTICE } from '../lib/content'
+import { CONVERSION_NOTICE } from '../utils/content'
 
 export function ConversionNotice({ onDismiss }: { onDismiss: () => void }) {
   return (

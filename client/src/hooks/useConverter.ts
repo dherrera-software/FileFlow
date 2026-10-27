@@ -1,7 +1,7 @@
 import { useCallback, useRef, useState } from 'react'
 import type { ChangeEvent, DragEvent } from 'react'
-import type { ConversionPair, FileFormat } from '../lib/formats'
-import { getTargetsForFormat, validateFile } from '../lib/formats'
+import type { ConversionPair, FileFormat } from '../utils/formats'
+import { getTargetsForFormat, validateFile } from '../utils/formats'
 import { convertAndDownload } from '../services/conversionApi'
 
 export type FileError = {

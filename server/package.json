@@ -1,7 +1,10 @@
 {
-  "name": "fileflow-backend",
+  "name": "fileflow-server",
   "version": "1.0.0",
   "description": "Production-ready backend for FileFlow file conversion",
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "main": "dist/server.js",
   "scripts": {
     "dev": "tsx watch src/server.ts",

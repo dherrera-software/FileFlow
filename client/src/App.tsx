@@ -29,7 +29,7 @@ export default function App() {
         <HeroSection controller={converter} />
         <PopularConversions onSelectPair={converter.actions.requestConversion} />
         <HowItWorks />
-        <PrivacySection />
+        <PrivacySection onSelectPair={converter.actions.requestConversion} />
         <FaqSection />
       </main>
 

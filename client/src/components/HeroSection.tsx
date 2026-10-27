@@ -1,4 +1,4 @@
-import { HERO } from '../lib/content'
+import { HERO } from '../utils/content'
 import type { ConverterController } from '../hooks/useConverter'
 import { FileUploadDropzone } from './FileUploadDropzone'
 

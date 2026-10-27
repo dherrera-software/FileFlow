@@ -1,5 +1,5 @@
 import { ArrowRight } from 'lucide-react'
-import type { ConversionPair } from '../lib/formats'
+import type { ConversionPair } from '../utils/formats'
 import { FormatBadge } from './ui/FormatBadge'
 
 type ConverterCardProps = {
