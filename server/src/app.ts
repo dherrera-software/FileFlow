@@ -1,54 +1,36 @@
 import express from 'express';
 import cors from 'cors';
-import { CONFIG } from './config.js';
+import 'dotenv/config';
 import healthRouter from './routes/health.route.js';
 import convertRouter from './routes/convert.route.js';
 import { errorHandler } from './middlewares/errorHandler.middleware.js';
 
 export const app = express();
 
-// CORS setup: normalize origin (browsers send Origin without path)
-const normalizeOrigin = (urlStr: string): string => {
-  try {
-    return new URL(urlStr).origin;
-  } catch {
-    return urlStr.replace(/\/$/, '');
-  }
+// Configuración de CORS
+const allowedOrigins: string[] = process.env.CORS_ORIGINS
+  ? process.env.CORS_ORIGINS.split(',').map((origin) => origin.trim())
+  : ['http://localhost:5173', 'http://localhost:3000'];
+
+const corsOptions: cors.CorsOptions = {
+  origin: (origin, callback) => {
+    // Permitir peticiones sin origen (como Postman, curl o peticiones entre servicios)
+    if (!origin) {
+      return callback(null, true);
+    }
+
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    return callback(new Error(`CORS blocked: Origin ${origin} is not allowed`));
+  },
+  credentials: true,
+  exposedHeaders: ['Content-Disposition'],
 };
 
-const clientOrigin = normalizeOrigin(CONFIG.CLIENT_URL);
-const allowedOrigins = new Set([
-  clientOrigin,
-  CONFIG.CLIENT_URL.replace(/\/$/, ''),
-  'http://localhost:5173',
-  'http://127.0.0.1:5173',
-]);
-
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      // Allow requests with no origin (e.g. server health-checks, curl, or mobile clients)
-      if (!origin) {
-        return callback(null, true);
-      }
-
-      const normalizedRequestOrigin = normalizeOrigin(origin);
-
-      if (allowedOrigins.has(origin) || allowedOrigins.has(normalizedRequestOrigin)) {
-        return callback(null, true);
-      }
-
-      // Permissive only during local development
-      if (CONFIG.NODE_ENV !== 'production') {
-        return callback(null, true);
-      }
-
-      return callback(new Error(`CORS blocked: Origin ${origin} is not allowed`));
-    },
-    credentials: true,
-    exposedHeaders: ['Content-Disposition'],
-  }),
-);
+// Middleware CORS colocado ANTES de definir las rutas
+app.use(cors(corsOptions));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
