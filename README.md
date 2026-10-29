@@ -1,7 +1,7 @@
 # FileFlow
 
 ![CI](https://github.com/dherrera-software/FileFlow/actions/workflows/deploy-client.yml/badge.svg)
-![Backend](https://img.shields.io/badge/backend-Render-blue)
+![Backend](https://img.shields.io/badge/backend-Cloudflare%20Workers-orange)
 ![Frontend](https://img.shields.io/badge/frontend-GitHub%20Pages-green)
 ![Node](https://img.shields.io/badge/node-%3E%3D20.0.0-brightgreen)
 ![pnpm](https://img.shields.io/badge/pnpm-%3E%3D9.0.0-orange)
@@ -26,7 +26,7 @@ pnpm dev
 
 # O iniciar individualmente desde la raíz
 pnpm dev:client  # Frontend en http://localhost:5173
-pnpm dev:server  # Backend en http://localhost:3000
+pnpm dev:server  # Backend en http://localhost:8787 (Wrangler) o http://localhost:3000
 ```
 
 ---
@@ -38,12 +38,11 @@ FileFlow/
 ├── .github/workflows/         # Automatización CI/CD (GitHub Actions)
 │   └── deploy-client.yml      # Despliegue automático de frontend a GitHub Pages
 ├── client/                    # Frontend SPA (React 19, TypeScript, Tailwind v4, Vite)
-├── server/                    # Backend API REST (Express, TypeScript NodeNext ESM)
+├── server/                    # Backend API REST (Cloudflare Workers / Hono, TypeScript)
 ├── docs/                      # Documentación detallada
 │   ├── architecture.md        # Arquitectura del sistema y flujo de datos
 │   └── deployment.md          # Guía paso a paso para desplegar en producción
 ├── pnpm-workspace.yaml        # Configuración del workspace de pnpm
-├── render.yaml                # Blueprint para despliegue automatizado en Render
 └── package.json               # Scripts y orquestación del monorepo
 ```
 
@@ -54,7 +53,7 @@ FileFlow/
 FileFlow está optimizado para desplegarse de forma 100% gratuita:
 
 - **Frontend**: Alojado en **GitHub Pages** mediante GitHub Actions.
-- **Backend**: Alojado en **Render** (Web Service, plan Free).
+- **Backend**: Alojado en **Cloudflare Workers**.
 
 Para instrucciones detalladas de configuración de variables de entorno, CORS y dominios, consulta la [**Guía de Despliegue Completa**](docs/deployment.md).
 

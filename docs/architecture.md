@@ -5,7 +5,7 @@
 FileFlow es una plataforma de conversión de archivos multipropósito diseñada con una arquitectura desacoplada basada en un monorepo gestionado con `pnpm`:
 
 - **Cliente Web (`client/`)**: SPA moderna construida con React 19, TypeScript y Tailwind CSS v4, empaquetada mediante Vite. Alojada estáticamente en **GitHub Pages**.
-- **Servidor API (`server/`)**: Servicio RESTful en Node.js con Express, TypeScript (NodeNext ESM) y librerías especializadas (`sharp`, `exceljs`, `pdf-lib`, `fluent-ffmpeg`, `libreoffice-convert`). Alojado en **Render** (Web Service).
+- **Servidor API (`server/`)**: Servicio RESTful serverless desplegado en **Cloudflare Workers** (usando TypeScript, Hono y Node.js compat). Procesa peticiones API y conversiones en memoria.
 
 ---
 
@@ -24,16 +24,15 @@ FileFlow es una plataforma de conversión de archivos multipropósito diseñada 
                                | (Header Origin validado vía CORS)
                                v
 +-------------------------------------------------------------+
-|                  API Backend (Render.com)                   |
-|   https://fileflow-server.onrender.com                      |
+|             API Backend (Cloudflare Workers)                |
+|   https://fileflow-server.<subdominio>.workers.dev          |
 |                                                             |
-|   3. Middleware de CORS y subida temporal Multer (RAM/disco)|
-|   4. Enrutamiento hacia el motor de conversión específico:  |
-|      - Imágenes: Sharp                                      |
-|      - Documentos: PDF-lib / Marked / Turndown              |
-|      - Tablas y datos: ExcelJS / Fast-XML-Parser            |
-|      - Multimedia: FFmpeg                                   |
-|   5. Generación de archivo transformado en `outputs/`       |
+|   3. Middleware de CORS y lectura de payload en memoria     |
+|   4. Enrutamiento hacia el motor de conversión en Worker:   |
+|      - Formatos tabulares/datos: ExcelJS / Fast-XML-Parser  |
+|      - Documentos texto: PDF-lib / Marked / Turndown        |
+|      - Formatos pesados externos: 501 Not Implemented       |
+|   5. Generación de respuesta binaria directa en streaming   |
 +------------------------------+------------------------------+
                                |
                                | HTTPS Response (Stream / Blob binario)
@@ -43,13 +42,13 @@ FileFlow es una plataforma de conversión de archivos multipropósito diseñada 
 |                Navegador del Usuario                        |
 |                                                             |
 |   6. Recepción del Blob y disparo de descarga automática    |
-|   7. Cron de limpieza en servidor purga archivos temporales |
+|   7. Operación sin persistencia en disco ni residuos        |
 +-------------------------------------------------------------+
 ```
 
 ### Resumen del Flujo:
 ```
-Cliente (GitHub Pages) ---> API (Render) ---> Conversión ---> Descarga en Navegador
+Cliente (GitHub Pages) ---> API (Cloudflare Workers) ---> Conversión ---> Descarga en Navegador
 ```
 
 ---

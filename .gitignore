@@ -25,6 +25,7 @@ outputs/
 # Tools & Caches
 .kombai/
 .vite/
+.wrangler/
 .eslintcache
 *.tsbuildinfo
 
