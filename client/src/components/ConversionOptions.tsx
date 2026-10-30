@@ -4,22 +4,20 @@ import type { ConverterController } from '../hooks/useConverter'
 import { Button } from './ui/Button'
 
 /**
- * Returns a human-readable label for each conversion phase based on progress percentage.
- */
-function getProgressLabel(progress: number): string {
-  if (progress <= 0) return 'Iniciando...'
-  if (progress < 50) return `Subiendo... ${progress}%`
-  if (progress === 50) return 'Procesando... 50%'
-  if (progress < 100) return `Descargando... ${progress}%`
-  return 'Completado 100%'
-}
-
-/**
  * Aparece una vez que el archivo ha sido aceptado. Las opciones de destino provienen
  * de las reglas compartidas, por lo que nunca se ofrecerá una opción incompatible.
  */
 export function ConversionOptions({ controller }: { controller: ConverterController }) {
-  const { format, target, targetOptions, canConvert, isConverting, conversionProgress, actions } = controller
+  const {
+    format,
+    target,
+    targetOptions,
+    canConvert,
+    isConverting,
+    conversionProgress,
+    conversionStage,
+    actions,
+  } = controller
 
   if (!format) return null
 
@@ -62,10 +60,10 @@ export function ConversionOptions({ controller }: { controller: ConverterControl
 
       {isConverting && (
         <div className="mt-3 space-y-1.5">
-          {/* Progress bar */}
+          {/* Progress bar with smooth linear easing */}
           <div className="h-1.5 w-full overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
             <div
-              className="h-full rounded-full bg-accent transition-all duration-300 ease-out"
+              className="h-full rounded-full bg-accent transition-all duration-100 ease-linear"
               style={{ width: `${Math.max(conversionProgress, 2)}%` }}
               role="progressbar"
               aria-valuenow={conversionProgress}
@@ -74,9 +72,11 @@ export function ConversionOptions({ controller }: { controller: ConverterControl
               aria-label="Progreso de conversión"
             />
           </div>
-          <p className="text-center text-[11px] font-medium text-ink-subtle">
-            {getProgressLabel(conversionProgress)}
-          </p>
+          {/* Dynamic real-time stage label & percentage */}
+          <div className="flex items-center justify-between px-0.5 text-[11.5px] text-ink-subtle">
+            <span className="truncate font-medium">{conversionStage || 'Procesando archivo...'}</span>
+            <span className="ml-2 shrink-0 font-semibold text-accent">{conversionProgress}%</span>
+          </div>
         </div>
       )}
 

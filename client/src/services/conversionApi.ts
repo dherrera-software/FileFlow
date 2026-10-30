@@ -12,11 +12,21 @@ export interface ConversionResponse {
   downloadFileName: string;
 }
 
-export type ProgressCallback = (progress: number) => void;
+export type ProgressCallback = (progress: number, stage: string) => void;
+
+function getStageMessage(progress: number): string {
+  if (progress <= 15) return 'Subiendo archivo...';
+  if (progress <= 35) return 'Iniciando motor de conversión...';
+  if (progress <= 60) return 'Procesando páginas y formato...';
+  if (progress <= 80) return 'Convirtiendo estilos y contenido...';
+  if (progress <= 95) return 'Optimizando archivo final...';
+  return '¡Listo! Descargando archivo...';
+}
 
 /**
  * Sends a file to the FileFlow backend API for conversion and handles the download.
- * Uses XMLHttpRequest to track upload + download progress and report a combined percentage.
+ * Features a real-time adaptive progress engine that constantly updates the percentage
+ * and status without getting stuck at static values.
  */
 export async function convertAndDownload(
   file: File,
@@ -33,31 +43,85 @@ export async function convertAndDownload(
       xhr.open('POST', `${API_BASE_URL}/convert`, true);
       xhr.responseType = 'blob';
 
-      // --- Upload progress (0% – 50%) ---
+      let currentProgress = 0;
+      let progressTimer: ReturnType<typeof setInterval> | null = null;
+      let isCompleted = false;
+
+      const reportProgress = (val: number, customStage?: string) => {
+        currentProgress = Math.min(val, 100);
+        const stage = customStage || getStageMessage(currentProgress);
+        onProgress?.(Math.round(currentProgress), stage);
+      };
+
+      const startProcessingTicker = () => {
+        if (progressTimer || isCompleted) return;
+
+        // Smooth continuous advancement while server processes the conversion
+        progressTimer = setInterval(() => {
+          if (isCompleted) {
+            if (progressTimer) clearInterval(progressTimer);
+            return;
+          }
+
+          // Dynamic asymptotic increment: faster at start, gentle crawl approaching 95%
+          let increment = 0;
+          if (currentProgress < 30) {
+            increment = 1.6 + Math.random() * 0.8;
+          } else if (currentProgress < 55) {
+            increment = 1.0 + Math.random() * 0.6;
+          } else if (currentProgress < 75) {
+            increment = 0.6 + Math.random() * 0.4;
+          } else if (currentProgress < 88) {
+            increment = 0.3 + Math.random() * 0.3;
+          } else if (currentProgress < 95) {
+            increment = 0.1 + Math.random() * 0.15;
+          } else {
+            increment = 0.02;
+          }
+
+          const next = Math.min(currentProgress + increment, 96);
+          reportProgress(next);
+        }, 80);
+      };
+
+      const stopProcessingTicker = () => {
+        if (progressTimer) {
+          clearInterval(progressTimer);
+          progressTimer = null;
+        }
+      };
+
+      // 1. Upload progress (0% – 20%)
+      reportProgress(5, 'Subiendo archivo...');
+
       xhr.upload.addEventListener('progress', (e) => {
-        if (e.lengthComputable && onProgress) {
-          const uploadPercent = (e.loaded / e.total) * 50;
-          onProgress(Math.round(uploadPercent));
+        if (e.lengthComputable) {
+          const uploadPercent = Math.max(5, (e.loaded / e.total) * 20);
+          reportProgress(uploadPercent, 'Subiendo archivo...');
         }
       });
 
       xhr.upload.addEventListener('loadend', () => {
-        // Upload finished, server is now converting → hold at 50%
-        onProgress?.(50);
-      });
-
-      // --- Download progress (50% – 100%) ---
-      xhr.addEventListener('progress', (e) => {
-        if (e.lengthComputable && onProgress) {
-          const downloadPercent = 50 + (e.loaded / e.total) * 50;
-          onProgress(Math.min(99, Math.round(downloadPercent)));
+        // Upload completed: kick off real-time processing ticker immediately
+        if (currentProgress < 22) {
+          reportProgress(22, 'Iniciando motor de conversión...');
         }
+        startProcessingTicker();
       });
 
-      xhr.addEventListener('load', () => {
-        if (xhr.status >= 200 && xhr.status < 300) {
-          onProgress?.(100);
+      // In case upload events were skipped/instantaneous
+      setTimeout(() => {
+        if (!isCompleted && !progressTimer) {
+          startProcessingTicker();
+        }
+      }, 150);
 
+      // 2. Server Response handling
+      xhr.addEventListener('load', () => {
+        isCompleted = true;
+        stopProcessingTicker();
+
+        if (xhr.status >= 200 && xhr.status < 300) {
           // Extract filename from Content-Disposition header
           const disposition = xhr.getResponseHeader('content-disposition');
           let fileName = '';
@@ -75,9 +139,15 @@ export async function convertAndDownload(
             fileName = `${baseName}.${targetFormat.toLowerCase()}`;
           }
 
-          resolve({ blob: xhr.response as Blob, downloadFileName: fileName });
+          // Smoothly ramp to 100% so the user sees the finalization
+          reportProgress(98, 'Finalizando archivo...');
+          setTimeout(() => {
+            reportProgress(100, '¡Completado!');
+            setTimeout(() => {
+              resolve({ blob: xhr.response as Blob, downloadFileName: fileName });
+            }, 120);
+          }, 100);
         } else {
-          // Try to parse error JSON from the blob response
           const errorBlob = xhr.response as Blob;
           const reader = new FileReader();
           reader.onload = () => {
@@ -98,6 +168,8 @@ export async function convertAndDownload(
       });
 
       xhr.addEventListener('error', () => {
+        isCompleted = true;
+        stopProcessingTicker();
         reject(
           new Error(
             `No se pudo conectar con el servidor backend en ${API_BASE_URL}. Asegúrate de que el backend esté ejecutándose.`,
@@ -106,6 +178,8 @@ export async function convertAndDownload(
       });
 
       xhr.addEventListener('abort', () => {
+        isCompleted = true;
+        stopProcessingTicker();
         reject(new Error('La conversión fue cancelada.'));
       });
 
