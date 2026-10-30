@@ -25,6 +25,7 @@ export function useConverter() {
   const [isDragging, setIsDragging] = useState(false)
   const [notice, setNotice] = useState(false)
   const [isConverting, setIsConverting] = useState(false)
+  const [conversionProgress, setConversionProgress] = useState(0)
   const [conversionError, setConversionError] = useState<string | null>(null)
   const [pendingPair, setPendingPair] = useState<ConversionPair | null>(null)
 
@@ -148,16 +149,20 @@ export function useConverter() {
     if (!file || !format || !target || isConverting) return
 
     setIsConverting(true)
+    setConversionProgress(0)
     setConversionError(null)
     setNotice(false)
 
     try {
-      await convertAndDownload(file, target)
+      await convertAndDownload(file, target, (progress) => {
+        setConversionProgress(progress)
+      })
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Ocurrió un error inesperado durante la conversión.'
       setConversionError(message)
     } finally {
       setIsConverting(false)
+      setConversionProgress(0)
     }
   }, [file, format, target, isConverting])
 
@@ -195,6 +200,7 @@ export function useConverter() {
     isDragging,
     notice,
     isConverting,
+    conversionProgress,
     conversionError,
     pendingPair,
     canConvert: Boolean(file && format && target && !isConverting),

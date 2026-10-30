@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import path from 'path';
 import crypto from 'crypto';
 import fs from 'fs/promises';
+import fsSync from 'fs';
 import { CONFIG } from '../config.js';
 import {
   getFileExtension,
@@ -59,15 +60,26 @@ export async function convertController(
     });
 
     const mimeType = MIME_TYPE_MAP[targetExt] || 'application/octet-stream';
+
+    // Set Content-Length so the client can track download progress accurately
+    const stat = await fs.stat(outputPath);
     res.setHeader('Content-Type', mimeType);
+    res.setHeader('Content-Length', stat.size);
     res.setHeader('Content-Disposition', `attachment; filename="${downloadFileName}"`);
 
-    res.download(outputPath, downloadFileName, async (downloadErr) => {
-      // Clean up input file after successful delivery or abort
-      await fs.unlink(uploadedFile.path).catch(() => {});
+    // Stream the converted file with a larger buffer for better throughput
+    const readStream = fsSync.createReadStream(outputPath, { highWaterMark: 256 * 1024 });
+    readStream.pipe(res);
 
-      if (downloadErr && !res.headersSent) {
-        next(downloadErr);
+    readStream.on('end', async () => {
+      // Clean up input file after successful delivery
+      await fs.unlink(uploadedFile.path).catch(() => {});
+    });
+
+    readStream.on('error', async (streamErr) => {
+      await fs.unlink(uploadedFile.path).catch(() => {});
+      if (!res.headersSent) {
+        next(streamErr);
       }
     });
   } catch (error: any) {
