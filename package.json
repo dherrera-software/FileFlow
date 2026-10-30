@@ -17,6 +17,9 @@
     "build:server": "pnpm --filter fileflow-server build",
     "lint": "pnpm --filter fileflow-client lint"
   },
+  "pnpm": {
+    "onlyBuiltDependencies": ["workerd"]
+  },
   "devDependencies": {
     "wrangler": "^4.156.0"
   }
