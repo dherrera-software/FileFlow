@@ -192,9 +192,9 @@ export const FORMAT_BADGE_STYLES: Record<FileFormat, string> = {
 /** Complete conversion matrix as requested */
 export const CONVERSION_TARGETS: Record<FileFormat, readonly string[]> = {
   // Documentos
-  DOCX: ['PDF', 'TXT', 'HTML', 'RTF', 'ODT', 'EPUB', 'MD'],
+  DOCX: ['PDF', 'TXT', 'HTML', 'RTF', 'ODT', 'MD'],
   DOC: ['DOCX', 'PDF', 'TXT', 'HTML', 'RTF', 'ODT'],
-  PDF: ['DOCX', 'JPG', 'PNG', 'TXT', 'XLSX', 'CSV', 'PDF/A'],
+  PDF: ['DOCX', 'JPG', 'PNG', 'TXT', 'PDF/A'],
   TXT: ['PDF', 'DOCX', 'HTML', 'MD', 'MP3'],
   RTF: ['PDF', 'DOCX', 'TXT'],
   HTML: ['PDF', 'DOCX', 'TXT', 'MD'],

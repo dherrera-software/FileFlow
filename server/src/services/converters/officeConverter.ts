@@ -7,8 +7,61 @@ import { promisify } from 'util';
 
 const execFileAsync = promisify(execFile);
 
+let _psScriptPath: string | null = null;
 let _libreofficeBinaryResolved = false;
 let _libreofficeBinaryPath: string | null = null;
+
+function getPowerShellScriptPath(): string {
+  if (_psScriptPath && fsSync.existsSync(_psScriptPath)) return _psScriptPath;
+
+  const possiblePaths = [
+    path.resolve(process.cwd(), 'src/scripts/convertOffice.ps1'),
+    path.resolve(process.cwd(), 'server/src/scripts/convertOffice.ps1'),
+    path.resolve(process.cwd(), 'dist/scripts/convertOffice.ps1'),
+    path.resolve(typeof __dirname !== 'undefined' ? __dirname : '', '../scripts/convertOffice.ps1'),
+  ];
+  for (const p of possiblePaths) {
+    if (fsSync.existsSync(p)) {
+      _psScriptPath = p;
+      return p;
+    }
+  }
+  _psScriptPath = possiblePaths[0];
+  return _psScriptPath;
+}
+
+export async function convertWithOfficeCOM(
+  inputPath: string,
+  outputPath: string,
+  sourceFormat: string,
+  targetFormat: string,
+): Promise<void> {
+  const scriptPath = getPowerShellScriptPath();
+  const { stdout, stderr } = await execFileAsync(
+    'powershell.exe',
+    [
+      '-NoProfile',
+      '-NonInteractive',
+      '-ExecutionPolicy',
+      'Bypass',
+      '-File',
+      scriptPath,
+      '-InputPath',
+      inputPath,
+      '-OutputPath',
+      outputPath,
+      '-SourceFormat',
+      sourceFormat,
+      '-TargetFormat',
+      targetFormat,
+    ],
+    { timeout: 120000, maxBuffer: 10 * 1024 * 1024 },
+  );
+
+  if (!stdout.includes('SUCCESS')) {
+    throw new Error(stderr || stdout || 'Office COM conversion failed');
+  }
+}
 
 /**
  * Robust detection of LibreOffice / soffice binary across platforms.
@@ -189,7 +242,8 @@ export async function convertWithLibreOffice(
 
 /**
  * Public API for Office conversions.
- * COM/PowerShell path removed. Uses LibreOffice Headless exclusively.
+ * On Windows: Uses MS Office COM if available (Word, Excel, PowerPoint).
+ * On Linux/Docker or fallback: Uses LibreOffice Headless.
  */
 export async function convertOfficeDocuments(
   inputPath: string,
@@ -197,6 +251,15 @@ export async function convertOfficeDocuments(
   sourceFormat: string,
   targetFormat: string,
 ): Promise<void> {
+  if (process.platform === 'win32') {
+    try {
+      await convertWithOfficeCOM(inputPath, outputPath, sourceFormat, targetFormat);
+      return;
+    } catch (err: any) {
+      console.warn(`[OfficeConverter] MS Office COM conversion warning: ${err.message}. Intentando fallback con LibreOffice...`);
+    }
+  }
+
   await convertWithLibreOffice(inputPath, outputPath, sourceFormat, targetFormat);
 }
 

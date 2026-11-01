@@ -2,7 +2,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import os from 'os';
 import crypto from 'crypto';
-import { convertOfficeDocuments } from './officeConverter.js';
+import { convertOfficeDocuments, convertWithOfficeCOM } from './officeConverter.js';
 import { convertMedia } from './mediaConverter.js';
 
 let _excelJSInstance: any = null;
@@ -15,15 +15,50 @@ async function getExcelJS() {
   return _excelJSInstance;
 }
 
+async function extractTextFromPdf(pdfBuffer: Buffer): Promise<string> {
+  const pdfParseModule = await import('pdf-parse');
+  // 1. pdf-parse v1 (function or default function export)
+  if (typeof (pdfParseModule as any).default === 'function') {
+    const data = await (pdfParseModule as any).default(pdfBuffer);
+    return data.text || '';
+  }
+  if (typeof pdfParseModule === 'function') {
+    const data = await (pdfParseModule as any)(pdfBuffer);
+    return data.text || '';
+  }
+  // 2. pdf-parse v2+ (PDFParse class)
+  const PDFParseClass = (pdfParseModule as any).PDFParse || (pdfParseModule.default as any)?.PDFParse;
+  if (PDFParseClass) {
+    const parser = new PDFParseClass({ data: pdfBuffer });
+    try {
+      const res = await parser.getText();
+      return res?.text || '';
+    } finally {
+      await parser.destroy().catch(() => {});
+    }
+  }
+  throw new Error('No compatible PDF parser found in pdf-parse library');
+}
+
 export async function convertSpecializedDocuments(
   inputPath: string,
   outputPath: string,
   sourceFormat: string,
   targetFormat: string,
 ): Promise<void> {
-  // 1. TXT -> MP3 (TTS) is not supported in headless Linux LibreOffice environment
+  // 1. TXT -> MP3 (TTS via Windows SpeechSynthesizer -> WAV -> FFmpeg -> MP3)
   if (sourceFormat === 'txt' && targetFormat === 'mp3') {
-    throw new Error('TXT to MP3 conversion with TTS is not supported in headless Linux environment. Requires Windows Speech Synthesizer which was removed.');
+    if (process.platform === 'win32') {
+      const tempWav = path.join(os.tmpdir(), `tts-${Date.now()}-${crypto.randomBytes(4).toString('hex')}.wav`);
+      try {
+        await convertWithOfficeCOM(inputPath, tempWav, 'txt', 'wav');
+        await convertMedia(tempWav, outputPath, 'wav', 'mp3');
+        return;
+      } finally {
+        fs.unlink(tempWav).catch(() => {});
+      }
+    }
+    throw new Error('La conversión de TXT a MP3 (TTS) requiere entorno Windows con SpeechSynthesizer.');
   }
 
   // 2. TXT -> MD, HTML
@@ -132,10 +167,7 @@ export async function convertSpecializedDocuments(
     }
 
     const pdfBuffer = await fs.readFile(inputPath);
-    const pdfParseModule = await import('pdf-parse');
-    const pdfParse = (pdfParseModule as any).default || pdfParseModule;
-    const data = await pdfParse(pdfBuffer);
-    const text = data.text || '';
+    const text = await extractTextFromPdf(pdfBuffer);
 
     if (targetFormat === 'txt') {
       await fs.writeFile(outputPath, text, 'utf-8');
@@ -165,6 +197,36 @@ export async function convertSpecializedDocuments(
 
   // 7. PDF -> JPG or PNG
   if (sourceFormat === 'pdf' && (targetFormat === 'jpg' || targetFormat === 'jpeg' || targetFormat === 'png')) {
+    // 1. Intentar renderizado de primera página vía PDFParse (@napi-rs/canvas)
+    try {
+      const pdfBuffer = await fs.readFile(inputPath);
+      const pdfParseModule = await import('pdf-parse');
+      const PDFParseClass = (pdfParseModule as any).PDFParse || (pdfParseModule.default as any)?.PDFParse;
+
+      if (PDFParseClass) {
+        const parser = new PDFParseClass({ data: pdfBuffer });
+        try {
+          const screenshot = await parser.getScreenshot({ page: 1 });
+          if (screenshot?.pages?.[0]?.data) {
+            const pageBuffer = Buffer.from(screenshot.pages[0].data);
+            if (targetFormat === 'png') {
+              await fs.writeFile(outputPath, pageBuffer);
+              return;
+            }
+            const sharpModule = await import('sharp');
+            const sharp = (sharpModule as any).default || sharpModule;
+            await sharp(pageBuffer).jpeg({ quality: 90 }).toFile(outputPath);
+            return;
+          }
+        } finally {
+          await parser.destroy().catch(() => {});
+        }
+      }
+    } catch (e: any) {
+      console.warn(`[SpecializedConverter] PDF to image via canvas fallback: ${e.message}`);
+    }
+
+    // 2. Fallback a pdf-poppler si está disponible en el sistema
     try {
       const pdfPopplerModule = await import('pdf-poppler');
       const pdfPoppler = (pdfPopplerModule as any).default || pdfPopplerModule;
@@ -187,7 +249,7 @@ export async function convertSpecializedDocuments(
       }
       return;
     } catch {
-      throw new Error('Conversion engine not installed on this server');
+      throw new Error('No se pudo convertir PDF a imagen. Instala poppler o verifica el documento.');
     }
   }
 

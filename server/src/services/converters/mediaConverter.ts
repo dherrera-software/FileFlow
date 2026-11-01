@@ -1,6 +1,48 @@
 import fsSync from 'fs';
+import path from 'path';
 
 let _ffmpegInstance: any = null;
+
+function resolveBinaryPath(name: 'ffmpeg' | 'ffprobe'): string | null {
+  const envVar = name === 'ffmpeg' ? process.env.FFMPEG_PATH : process.env.FFPROBE_PATH;
+  if (envVar && fsSync.existsSync(envVar)) return envVar;
+
+  const exeName = process.platform === 'win32' ? `${name}.exe` : name;
+  const candidates: string[] = [
+    `/usr/bin/${name}`,
+    `/usr/local/bin/${name}`,
+    `C:\\ffmpeg\\bin\\${exeName}`,
+    `C:\\Program Files\\ffmpeg\\bin\\${exeName}`,
+  ];
+
+  if (process.platform === 'win32' && process.env.LOCALAPPDATA) {
+    const wingetDir = path.join(process.env.LOCALAPPDATA, 'Microsoft', 'WinGet', 'Packages');
+    if (fsSync.existsSync(wingetDir)) {
+      try {
+        const pkgs = fsSync.readdirSync(wingetDir);
+        for (const pkg of pkgs) {
+          if (pkg.toLowerCase().includes('ffmpeg')) {
+            const subDirs = fsSync.readdirSync(path.join(wingetDir, pkg), { withFileTypes: true });
+            for (const sub of subDirs) {
+              if (sub.isDirectory()) {
+                const candidate = path.join(wingetDir, pkg, sub.name, 'bin', exeName);
+                if (fsSync.existsSync(candidate)) {
+                  candidates.unshift(candidate);
+                }
+              }
+            }
+          }
+        }
+      } catch {}
+    }
+  }
+
+  for (const c of candidates) {
+    if (fsSync.existsSync(c)) return c;
+  }
+
+  return null;
+}
 
 async function getFfmpeg() {
   if (_ffmpegInstance) return _ffmpegInstance;
@@ -8,16 +50,14 @@ async function getFfmpeg() {
   const fluentModule = await import('fluent-ffmpeg');
   const ffmpeg = (fluentModule as any).default || fluentModule;
 
-  if (process.env.FFMPEG_PATH) {
-    ffmpeg.setFfmpegPath(process.env.FFMPEG_PATH);
-  } else if (fsSync.existsSync('/usr/bin/ffmpeg')) {
-    ffmpeg.setFfmpegPath('/usr/bin/ffmpeg');
+  const ffmpegPath = resolveBinaryPath('ffmpeg');
+  if (ffmpegPath) {
+    ffmpeg.setFfmpegPath(ffmpegPath);
   }
 
-  if (process.env.FFPROBE_PATH) {
-    ffmpeg.setFfprobePath(process.env.FFPROBE_PATH);
-  } else if (fsSync.existsSync('/usr/bin/ffprobe')) {
-    ffmpeg.setFfprobePath('/usr/bin/ffprobe');
+  const ffprobePath = resolveBinaryPath('ffprobe');
+  if (ffprobePath) {
+    ffmpeg.setFfprobePath(ffprobePath);
   }
 
   _ffmpegInstance = ffmpeg;

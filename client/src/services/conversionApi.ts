@@ -43,11 +43,18 @@ export async function convertAndDownload(
 
   reportProgress(5, 'Subiendo archivo...');
 
-  // 1. Enqueue job (POST /api/convert)
-  const enqueueRes = await fetch(`${API_BASE_URL}/convert`, {
-    method: 'POST',
-    body: formData,
-  });
+  // 1. Enqueue job or send for conversion (POST /api/convert)
+  let enqueueRes: Response;
+  try {
+    enqueueRes = await fetch(`${API_BASE_URL}/convert`, {
+      method: 'POST',
+      body: formData,
+    });
+  } catch (netErr: any) {
+    throw new Error(
+      `No se pudo conectar con el servidor backend en ${API_BASE_URL}. Asegúrate de que el backend esté iniciado y accesible.`
+    );
+  }
 
   if (!enqueueRes.ok) {
     let errorMsg = `Error del servidor (${enqueueRes.status})`;
@@ -60,6 +67,36 @@ export async function convertAndDownload(
     throw new Error(errorMsg);
   }
 
+  const contentType = enqueueRes.headers.get('content-type') || '';
+
+  // Manejo de respuesta binaria directa (Modo síncrono / Cloudflare Workers)
+  if (!contentType.includes('application/json')) {
+    reportProgress(90, 'Finalizando y descargando archivo...');
+    const disposition = enqueueRes.headers.get('content-disposition');
+    let downloadFileName = `${file.name.replace(/\.[^/.]+$/, '')}.${targetFormat.toLowerCase()}`;
+    if (disposition && disposition.includes('filename=')) {
+      const match = disposition.match(/filename="?([^";]+)"?/i);
+      if (match?.[1]) {
+        downloadFileName = match[1].trim();
+      }
+    }
+
+    const blob = await enqueueRes.blob();
+    reportProgress(100, '¡Completado!');
+
+    const downloadUrl = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+    link.download = downloadFileName;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(downloadUrl);
+
+    return downloadFileName;
+  }
+
+  // Manejo de respuesta con cola asíncrona (Node.js Express / Job Queue)
   const enqueueData = await enqueueRes.json();
   const jobId = enqueueData.jobId;
 
@@ -80,7 +117,14 @@ export async function convertAndDownload(
     await new Promise((resolve) => setTimeout(resolve, pollIntervalMs));
     attempts++;
 
-    const statusRes = await fetch(`${API_BASE_URL}/status/${jobId}`);
+    let statusRes: Response;
+    try {
+      statusRes = await fetch(`${API_BASE_URL}/status/${jobId}`);
+    } catch {
+      // Reintentar brevemente si hay un corte transitorio de red antes de fallar
+      continue;
+    }
+
     if (!statusRes.ok) {
       throw new Error(`Error al consultar estado de la tarea (${statusRes.status})`);
     }
@@ -115,7 +159,12 @@ export async function convertAndDownload(
 
   // 3. Download converted file (GET /api/download/:jobId)
   reportProgress(95, 'Descargando resultado...');
-  const downloadRes = await fetch(`${API_BASE_URL}/download/${jobId}`);
+  let downloadRes: Response;
+  try {
+    downloadRes = await fetch(`${API_BASE_URL}/download/${jobId}`);
+  } catch (err: any) {
+    throw new Error(`Error de conexión al descargar el archivo: ${err?.message || err}`);
+  }
   if (!downloadRes.ok) {
     let errorMsg = `Error al descargar archivo (${downloadRes.status})`;
     try {

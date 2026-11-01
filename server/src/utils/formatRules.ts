@@ -54,7 +54,7 @@ export type SupportedSourceFormat = (typeof SUPPORTED_SOURCE_FORMATS)[number];
 
 export const CONVERSION_MATRIX: Record<SupportedSourceFormat, readonly string[]> = {
   // Documentos
-  docx: ['pdf', 'txt', 'html', 'rtf', 'odt', 'epub', 'md'],
+  docx: ['pdf', 'txt', 'html', 'rtf', 'odt', 'md'],
   doc: ['docx', 'pdf', 'txt', 'html', 'rtf', 'odt'],
   pdf: ['docx', 'jpg', 'png', 'txt', 'xlsx', 'csv', 'pdfa'],
   txt: ['pdf', 'docx', 'html', 'md', 'mp3'],

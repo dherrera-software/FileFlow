@@ -9,7 +9,8 @@
   },
   "main": "src/index.ts",
   "scripts": {
-    "dev": "wrangler dev",
+    "dev": "tsx watch src/server.ts",
+    "dev:worker": "wrangler dev",
     "dev:node": "tsx watch src/server.ts",
     "build": "wrangler deploy --dry-run",
     "deploy": "wrangler deploy",
