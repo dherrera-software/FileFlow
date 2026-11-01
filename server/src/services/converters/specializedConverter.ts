@@ -2,7 +2,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import os from 'os';
 import crypto from 'crypto';
-import { convertOfficeDocuments, convertWithOfficeCOM } from './officeConverter.js';
+import { convertOfficeDocuments } from './officeConverter.js';
 import { convertMedia } from './mediaConverter.js';
 
 let _excelJSInstance: any = null;
@@ -21,16 +21,9 @@ export async function convertSpecializedDocuments(
   sourceFormat: string,
   targetFormat: string,
 ): Promise<void> {
-  // 1. TXT -> MP3 (via Windows SpeechSynthesizer -> WAV -> FFmpeg -> MP3)
+  // 1. TXT -> MP3 (TTS) is not supported in headless Linux LibreOffice environment
   if (sourceFormat === 'txt' && targetFormat === 'mp3') {
-    const tempWav = path.join(os.tmpdir(), `tts-${Date.now()}-${crypto.randomBytes(4).toString('hex')}.wav`);
-    try {
-      await convertWithOfficeCOM(inputPath, tempWav, 'txt', 'wav');
-      await convertMedia(tempWav, outputPath, 'wav', 'mp3');
-    } finally {
-      fs.unlink(tempWav).catch(() => {});
-    }
-    return;
+    throw new Error('TXT to MP3 conversion with TTS is not supported in headless Linux environment. Requires Windows Speech Synthesizer which was removed.');
   }
 
   // 2. TXT -> MD, HTML

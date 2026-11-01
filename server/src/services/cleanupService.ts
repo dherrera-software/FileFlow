@@ -2,9 +2,11 @@ import fs from 'fs/promises';
 import path from 'path';
 import cron from 'node-cron';
 import { CONFIG } from '../config.js';
+import { removeOldJobs } from './conversionQueue.js';
 
-export async function cleanupFolder(folderPath: string, maxAgeMinutes: number): Promise<number> {
+export async function cleanupFolder(folderPath: string, maxAgeMinutes: number): Promise<{ cleanedCount: number; freedBytes: number }> {
   let cleanedCount = 0;
+  let freedBytes = 0;
   const now = Date.now();
   const maxAgeMs = maxAgeMinutes * 60 * 1000;
 
@@ -20,11 +22,16 @@ export async function cleanupFolder(folderPath: string, maxAgeMinutes: number): 
         const ageMs = now - stats.mtimeMs;
 
         if (ageMs > maxAgeMs) {
-          await fs.unlink(filePath);
-          cleanedCount++;
+          try {
+            freedBytes += stats.size;
+            await fs.unlink(filePath);
+            cleanedCount++;
+          } catch (unlinkErr: any) {
+            console.warn(`[Cleanup] Failed to remove ${filePath}:`, unlinkErr?.message);
+          }
         }
-      } catch (err: any) {
-        console.warn(`[Cleanup] Failed to remove ${filePath}:`, err?.message);
+      } catch (statErr: any) {
+        console.warn(`[Cleanup] Failed to stat ${filePath}:`, statErr?.message);
       }
     }
   } catch (err: any) {
@@ -33,27 +40,40 @@ export async function cleanupFolder(folderPath: string, maxAgeMinutes: number): 
     }
   }
 
-  return cleanedCount;
+  return { cleanedCount, freedBytes };
 }
 
 export async function runCleanup(): Promise<void> {
-  const uploadsCleaned = await cleanupFolder(CONFIG.UPLOADS_DIR, CONFIG.FILE_RETENTION_MINUTES);
-  const outputsCleaned = await cleanupFolder(CONFIG.OUTPUTS_DIR, CONFIG.FILE_RETENTION_MINUTES);
+  const { cleanedCount: uploadsCleaned, freedBytes: uploadsFreed } = await cleanupFolder(CONFIG.UPLOADS_DIR, CONFIG.FILE_RETENTION_MINUTES);
+  const { cleanedCount: outputsCleaned, freedBytes: outputsFreed } = await cleanupFolder(CONFIG.OUTPUTS_DIR, CONFIG.FILE_RETENTION_MINUTES);
+  
+  try {
+    removeOldJobs(CONFIG.FILE_RETENTION_MINUTES);
+  } catch (err: any) {
+    console.error('[Cleanup] Error removing old jobs:', err?.message);
+  }
 
-  if (uploadsCleaned > 0 || outputsCleaned > 0) {
+  const totalCleaned = uploadsCleaned + outputsCleaned;
+  const totalFreed = uploadsFreed + outputsFreed;
+
+  if (totalCleaned > 0) {
+    const mbFreed = (totalFreed / (1024 * 1024)).toFixed(2);
     console.log(
-      `[Cleanup] Removed expired files (> ${CONFIG.FILE_RETENTION_MINUTES} min): ${uploadsCleaned} from uploads, ${outputsCleaned} from outputs.`,
+      `[Cleanup] Removed ${totalCleaned} expired files (> ${CONFIG.FILE_RETENTION_MINUTES} min): ${uploadsCleaned} from uploads, ${outputsCleaned} from outputs. Freed ~${mbFreed} MB.`,
     );
   }
 }
 
 /**
- * Starts a cron job that runs periodically to enforce the 10-minute retention policy.
+ * Starts a cron job that runs periodically to enforce retention policy.
  */
 export function startCleanupSchedule(): cron.ScheduledTask {
-  // Run every 2 minutes
   const task = cron.schedule('*/2 * * * *', async () => {
-    await runCleanup();
+    try {
+      await runCleanup();
+    } catch (err: any) {
+      console.error('[Cleanup] Scheduled cleanup failed:', err?.message);
+    }
   });
 
   console.log(`[Cleanup] Scheduled cleanup running every 2 minutes (Retention: ${CONFIG.FILE_RETENTION_MINUTES} min)`);

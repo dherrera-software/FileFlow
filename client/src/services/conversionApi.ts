@@ -15,18 +15,16 @@ export interface ConversionResponse {
 export type ProgressCallback = (progress: number, stage: string) => void;
 
 function getStageMessage(progress: number): string {
-  if (progress <= 15) return 'Subiendo archivo...';
-  if (progress <= 35) return 'Iniciando motor de conversión...';
-  if (progress <= 60) return 'Procesando páginas y formato...';
-  if (progress <= 80) return 'Convirtiendo estilos y contenido...';
+  if (progress <= 15) return 'Subiendo archivo y encolando tarea...';
+  if (progress <= 40) return 'En cola de espera...';
+  if (progress <= 75) return 'Procesando conversión en segundo plano...';
   if (progress <= 95) return 'Optimizando archivo final...';
   return '¡Listo! Descargando archivo...';
 }
 
 /**
- * Sends a file to the FileFlow backend API for conversion and handles the download.
- * Features a real-time adaptive progress engine that constantly updates the percentage
- * and status without getting stuck at static values.
+ * Sends a file to the FileFlow async backend API for conversion,
+ * polls job status, and handles the download.
  */
 export async function convertAndDownload(
   file: File,
@@ -37,155 +35,100 @@ export async function convertAndDownload(
   formData.append('file', file);
   formData.append('targetFormat', targetFormat.toLowerCase());
 
-  const { blob, downloadFileName } = await new Promise<{ blob: Blob; downloadFileName: string }>(
-    (resolve, reject) => {
-      const xhr = new XMLHttpRequest();
-      xhr.open('POST', `${API_BASE_URL}/convert`, true);
-      xhr.responseType = 'blob';
+  const reportProgress = (val: number, customStage?: string) => {
+    const progress = Math.min(val, 100);
+    const stage = customStage || getStageMessage(progress);
+    onProgress?.(Math.round(progress), stage);
+  };
 
-      let currentProgress = 0;
-      let progressTimer: ReturnType<typeof setInterval> | null = null;
-      let isCompleted = false;
+  reportProgress(5, 'Subiendo archivo...');
 
-      const reportProgress = (val: number, customStage?: string) => {
-        currentProgress = Math.min(val, 100);
-        const stage = customStage || getStageMessage(currentProgress);
-        onProgress?.(Math.round(currentProgress), stage);
-      };
+  // 1. Enqueue job (POST /api/convert)
+  const enqueueRes = await fetch(`${API_BASE_URL}/convert`, {
+    method: 'POST',
+    body: formData,
+  });
 
-      const startProcessingTicker = () => {
-        if (progressTimer || isCompleted) return;
+  if (!enqueueRes.ok) {
+    let errorMsg = `Error del servidor (${enqueueRes.status})`;
+    try {
+      const data = await enqueueRes.json();
+      if (data && typeof data.error === 'string') {
+        errorMsg = data.error;
+      }
+    } catch {}
+    throw new Error(errorMsg);
+  }
 
-        // Smooth continuous advancement while server processes the conversion
-        progressTimer = setInterval(() => {
-          if (isCompleted) {
-            if (progressTimer) clearInterval(progressTimer);
-            return;
-          }
+  const enqueueData = await enqueueRes.json();
+  const jobId = enqueueData.jobId;
 
-          // Dynamic asymptotic increment: faster at start, gentle crawl approaching 95%
-          let increment = 0;
-          if (currentProgress < 30) {
-            increment = 1.6 + Math.random() * 0.8;
-          } else if (currentProgress < 55) {
-            increment = 1.0 + Math.random() * 0.6;
-          } else if (currentProgress < 75) {
-            increment = 0.6 + Math.random() * 0.4;
-          } else if (currentProgress < 88) {
-            increment = 0.3 + Math.random() * 0.3;
-          } else if (currentProgress < 95) {
-            increment = 0.1 + Math.random() * 0.15;
-          } else {
-            increment = 0.02;
-          }
+  if (!jobId) {
+    throw new Error('No se pudo obtener el ID de la tarea de conversión.');
+  }
 
-          const next = Math.min(currentProgress + increment, 96);
-          reportProgress(next);
-        }, 80);
-      };
+  reportProgress(20, 'Tarea encolada. Iniciando procesamiento...');
 
-      const stopProcessingTicker = () => {
-        if (progressTimer) {
-          clearInterval(progressTimer);
-          progressTimer = null;
-        }
-      };
+  // 2. Poll job status (GET /api/status/:jobId)
+  let downloadFileName = `${file.name.replace(/\.[^/.]+$/, '')}.${targetFormat.toLowerCase()}`;
+  let currentProgress = 20;
+  const pollIntervalMs = 800;
+  const maxAttempts = 375; // up to 5 minutes for heavy files
+  let attempts = 0;
 
-      // 1. Upload progress (0% – 20%)
-      reportProgress(5, 'Subiendo archivo...');
+  while (attempts < maxAttempts) {
+    await new Promise((resolve) => setTimeout(resolve, pollIntervalMs));
+    attempts++;
 
-      xhr.upload.addEventListener('progress', (e) => {
-        if (e.lengthComputable) {
-          const uploadPercent = Math.max(5, (e.loaded / e.total) * 20);
-          reportProgress(uploadPercent, 'Subiendo archivo...');
-        }
-      });
+    const statusRes = await fetch(`${API_BASE_URL}/status/${jobId}`);
+    if (!statusRes.ok) {
+      throw new Error(`Error al consultar estado de la tarea (${statusRes.status})`);
+    }
 
-      xhr.upload.addEventListener('loadend', () => {
-        // Upload completed: kick off real-time processing ticker immediately
-        if (currentProgress < 22) {
-          reportProgress(22, 'Iniciando motor de conversión...');
-        }
-        startProcessingTicker();
-      });
+    const statusData = await statusRes.json();
 
-      // In case upload events were skipped/instantaneous
-      setTimeout(() => {
-        if (!isCompleted && !progressTimer) {
-          startProcessingTicker();
-        }
-      }, 150);
+    if (statusData.status === 'completed') {
+      if (statusData.downloadFileName) {
+        downloadFileName = statusData.downloadFileName;
+      }
+      reportProgress(90, '¡Conversión completada!');
+      break;
+    }
 
-      // 2. Server Response handling
-      xhr.addEventListener('load', () => {
-        isCompleted = true;
-        stopProcessingTicker();
+    if (statusData.status === 'failed') {
+      throw new Error(statusData.error || 'La conversión falló en el servidor.');
+    }
 
-        if (xhr.status >= 200 && xhr.status < 300) {
-          // Extract filename from Content-Disposition header
-          const disposition = xhr.getResponseHeader('content-disposition');
-          let fileName = '';
+    // Incremental progress while pending or processing
+    if (statusData.status === 'processing') {
+      currentProgress = Math.min(currentProgress + 2.5, 88);
+      reportProgress(currentProgress, 'Procesando archivo pesados en segundo plano...');
+    } else {
+      currentProgress = Math.min(currentProgress + 1, 45);
+      reportProgress(currentProgress, 'En cola de espera...');
+    }
+  }
 
-          if (disposition && disposition.includes('filename=')) {
-            const match = disposition.match(/filename="?([^";]+)"?/i);
-            if (match?.[1]) {
-              fileName = match[1].trim();
-            }
-          }
+  if (attempts >= maxAttempts) {
+    throw new Error('La conversión tardó demasiado tiempo y expiró el tiempo de espera.');
+  }
 
-          if (!fileName) {
-            const lastDot = file.name.lastIndexOf('.');
-            const baseName = lastDot === -1 ? file.name : file.name.slice(0, lastDot);
-            fileName = `${baseName}.${targetFormat.toLowerCase()}`;
-          }
+  // 3. Download converted file (GET /api/download/:jobId)
+  reportProgress(95, 'Descargando resultado...');
+  const downloadRes = await fetch(`${API_BASE_URL}/download/${jobId}`);
+  if (!downloadRes.ok) {
+    let errorMsg = `Error al descargar archivo (${downloadRes.status})`;
+    try {
+      const data = await downloadRes.json();
+      if (data && typeof data.error === 'string') {
+        errorMsg = data.error;
+      }
+    } catch {}
+    throw new Error(errorMsg);
+  }
 
-          // Smoothly ramp to 100% so the user sees the finalization
-          reportProgress(98, 'Finalizando archivo...');
-          setTimeout(() => {
-            reportProgress(100, '¡Completado!');
-            setTimeout(() => {
-              resolve({ blob: xhr.response as Blob, downloadFileName: fileName });
-            }, 120);
-          }, 100);
-        } else {
-          const errorBlob = xhr.response as Blob;
-          const reader = new FileReader();
-          reader.onload = () => {
-            let errorMessage = `Error del servidor (${xhr.status})`;
-            try {
-              const parsed = JSON.parse(reader.result as string);
-              if (parsed && typeof parsed.error === 'string') {
-                errorMessage = parsed.error;
-              }
-            } catch {
-              errorMessage = xhr.statusText || errorMessage;
-            }
-            reject(new Error(errorMessage));
-          };
-          reader.onerror = () => reject(new Error(`Error del servidor (${xhr.status})`));
-          reader.readAsText(errorBlob);
-        }
-      });
-
-      xhr.addEventListener('error', () => {
-        isCompleted = true;
-        stopProcessingTicker();
-        reject(
-          new Error(
-            `No se pudo conectar con el servidor backend en ${API_BASE_URL}. Asegúrate de que el backend esté ejecutándose.`,
-          ),
-        );
-      });
-
-      xhr.addEventListener('abort', () => {
-        isCompleted = true;
-        stopProcessingTicker();
-        reject(new Error('La conversión fue cancelada.'));
-      });
-
-      xhr.send(formData);
-    },
-  );
+  const blob = await downloadRes.blob();
+  reportProgress(100, '¡Completado!');
 
   // Trigger browser download
   const downloadUrl = window.URL.createObjectURL(blob);

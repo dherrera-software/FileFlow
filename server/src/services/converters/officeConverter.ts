@@ -7,86 +7,52 @@ import { promisify } from 'util';
 
 const execFileAsync = promisify(execFile);
 
-let _psScriptPath: string | null = null;
 let _libreofficeBinaryResolved = false;
 let _libreofficeBinaryPath: string | null = null;
 
-function getPowerShellScriptPath(): string {
-  if (_psScriptPath) return _psScriptPath;
-
-  const possiblePaths = [
-    path.resolve(process.cwd(), 'src/scripts/convertOffice.ps1'),
-    path.resolve(process.cwd(), 'dist/scripts/convertOffice.ps1'),
-    path.resolve(typeof __dirname !== 'undefined' ? __dirname : '', '../scripts/convertOffice.ps1'),
-  ];
-  for (const p of possiblePaths) {
-    if (fsSync.existsSync(p)) {
-      _psScriptPath = p;
-      return p;
-    }
-  }
-  _psScriptPath = possiblePaths[0];
-  return _psScriptPath;
-}
-
+/**
+ * Robust detection of LibreOffice / soffice binary across platforms.
+ * Priority:
+ * 1. LIBREOFFICE_PATH env var
+ * 2. SOFFICE_PATH env var
+ * 3. Common system paths
+ */
 function getLibreOfficeBinaryPath(): string | null {
   if (_libreofficeBinaryResolved) return _libreofficeBinaryPath;
 
-  const possiblePaths = [
+  const candidates = [
     process.env.LIBREOFFICE_PATH,
     process.env.SOFFICE_PATH,
-    '/usr/bin/libreoffice',
     '/usr/bin/soffice',
+    '/usr/bin/libreoffice',
+    '/usr/local/bin/soffice',
+    '/usr/local/bin/libreoffice',
     '/snap/bin/libreoffice',
+    '/opt/libreoffice7.6/program/soffice',
     '/opt/libreoffice/program/soffice',
+    '/opt/homebrew/bin/soffice',
+    '/Applications/LibreOffice.app/Contents/MacOS/soffice',
     'C:\\Program Files\\LibreOffice\\program\\soffice.exe',
     'C:\\Program Files (x86)\\LibreOffice\\program\\soffice.exe',
   ].filter(Boolean) as string[];
 
-  for (const p of possiblePaths) {
-    if (fsSync.existsSync(p)) {
-      _libreofficeBinaryPath = p;
-      break;
-    }
+  for (const p of candidates) {
+    try {
+      if (fsSync.existsSync(p)) {
+        _libreofficeBinaryPath = p;
+        break;
+      }
+    } catch {}
   }
 
   _libreofficeBinaryResolved = true;
   return _libreofficeBinaryPath;
 }
 
-export async function convertWithOfficeCOM(
-  inputPath: string,
-  outputPath: string,
-  sourceFormat: string,
-  targetFormat: string,
-): Promise<void> {
-  const scriptPath = getPowerShellScriptPath();
-  const { stdout, stderr } = await execFileAsync(
-    'powershell.exe',
-    [
-      '-NoProfile',
-      '-NonInteractive',
-      '-ExecutionPolicy',
-      'Bypass',
-      '-File',
-      scriptPath,
-      '-InputPath',
-      inputPath,
-      '-OutputPath',
-      outputPath,
-      '-SourceFormat',
-      sourceFormat,
-      '-TargetFormat',
-      targetFormat,
-    ],
-    { timeout: 120000, maxBuffer: 10 * 1024 * 1024 },
-  );
-
-  if (!stdout.includes('SUCCESS')) {
-    throw new Error(stderr || stdout || 'Office COM conversion failed');
-  }
-}
-
+/**
+ * Convert a file using LibreOffice CLI headless.
+ * Creates a temp working directory, copies input, runs soffice, moves result.
+ */
 export async function convertWithLibreOfficeCli(
   binaryPath: string,
   inputPath: string,
@@ -95,7 +61,8 @@ export async function convertWithLibreOfficeCli(
   targetFormat: string,
 ): Promise<void> {
   const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'libreoffice-'));
-  const tempInput = path.join(tempDir, `doc_${Date.now()}.${sourceFormat}`);
+  const tempInputName = `doc_${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${sourceFormat}`;
+  const tempInput = path.join(tempDir, tempInputName);
 
   try {
     await fs.copyFile(inputPath, tempInput);
@@ -107,13 +74,17 @@ export async function convertWithLibreOfficeCli(
       '--nofirststartwizard',
       '--nolockcheck',
       '--nologo',
+      '--convert-to',
+      targetFormat,
+      '--outdir',
+      tempDir,
+      tempInput,
     ];
 
+    // Special filter for PDF import
     if (sourceFormat === 'pdf' && ['docx', 'doc', 'odt', 'rtf', 'txt'].includes(targetFormat)) {
-      args.push('--infilter=writer_pdf_import');
+      args.splice(7, 0, '--infilter=writer_pdf_import');
     }
-
-    args.push('--convert-to', targetFormat, '--outdir', tempDir, tempInput);
 
     await execFileAsync(binaryPath, args, { timeout: 120000 });
 
@@ -124,21 +95,28 @@ export async function convertWithLibreOfficeCli(
 
     if (!generatedFile) {
       throw new Error(
-        `LibreOffice CLI executed but did not generate the .${targetFormat} output file.`,
+        `LibreOffice CLI executed but did not generate .${targetFormat} output. Files: ${files.join(', ')}`,
       );
     }
 
     const generatedPath = path.join(tempDir, generatedFile);
+    await fs.mkdir(path.dirname(outputPath), { recursive: true });
+    // Prefer rename, fallback to copy
     try {
       await fs.rename(generatedPath, outputPath);
     } catch {
       await fs.copyFile(generatedPath, outputPath);
     }
   } finally {
-    fs.rm(tempDir, { recursive: true, force: true }).catch(() => {});
+    // Cleanup temp directory
+    await fs.rm(tempDir, { recursive: true, force: true }).catch(() => {});
   }
 }
 
+/**
+ * Convert using libreoffice-convert npm library as fallback.
+ * Allows headless conversion when binary is missing or CLI fails.
+ */
 export async function convertWithLibreOffice(
   inputPath: string,
   outputPath: string,
@@ -147,17 +125,19 @@ export async function convertWithLibreOffice(
 ): Promise<void> {
   const binary = getLibreOfficeBinaryPath();
 
+  // 1. Try direct CLI if binary found
   if (binary) {
     try {
       await convertWithLibreOfficeCli(binary, inputPath, outputPath, sourceFormat, targetFormat);
       return;
     } catch (cliErr: any) {
       console.warn(
-        `[Conversion] Direct LibreOffice CLI attempt failed: ${cliErr.message}. Trying libreoffice-convert fallback...`,
+        `[OfficeConverter] Direct LibreOffice CLI failed: ${cliErr.message}. Falling back to libreoffice-convert library...`,
       );
     }
   }
 
+  // 2. Fallback to libreoffice-convert library
   try {
     const libre = await import('libreoffice-convert');
     const libreConvertWithOptions = (libre as any).convertWithOptions || libre.default?.convertWithOptions;
@@ -169,7 +149,7 @@ export async function convertWithLibreOffice(
 
     const inputBuffer = await fs.readFile(inputPath);
     const convertedBuffer = await new Promise<Buffer>((resolve, reject) => {
-      const options = {
+      const options: any = {
         fileName: `document.${sourceFormat}`,
         sofficeBinaryPaths: binary ? [binary] : undefined,
         sofficeAdditionalArgs:
@@ -197,33 +177,35 @@ export async function convertWithLibreOffice(
       }
     });
 
+    await fs.mkdir(path.dirname(outputPath), { recursive: true });
     await fs.writeFile(outputPath, convertedBuffer);
   } catch (error: any) {
-    console.error(
-      `[Conversion Error: LibreOffice] Failed to convert ${sourceFormat} to ${targetFormat}:`,
-      error,
-    );
+    console.error(`[OfficeConverter] LibreOffice conversion failed ${sourceFormat} -> ${targetFormat}:`, error);
     throw new Error(
       `Conversion engine error for ${sourceFormat} -> ${targetFormat}: ${error?.message || error}`,
     );
   }
 }
 
+/**
+ * Public API for Office conversions.
+ * COM/PowerShell path removed. Uses LibreOffice Headless exclusively.
+ */
 export async function convertOfficeDocuments(
   inputPath: string,
   outputPath: string,
   sourceFormat: string,
   targetFormat: string,
 ): Promise<void> {
-  if (process.platform === 'win32') {
-    try {
-      await convertWithOfficeCOM(inputPath, outputPath, sourceFormat, targetFormat);
-      return;
-    } catch (err: any) {
-      console.warn(`[Conversion] MS Office COM conversion warning: ${err.message}. Trying LibreOffice fallback...`);
-    }
-  }
-
   await convertWithLibreOffice(inputPath, outputPath, sourceFormat, targetFormat);
 }
 
+/**
+ * Docker / Production notes:
+ * Install LibreOffice headless on Linux:
+ *   apt-get update && apt-get install -y libreoffice
+ * Optional for better typography:
+ *   apt-get install -y fonts-liberation fonts-dejavu
+ * Ensure soffice is in PATH (/usr/bin/soffice) or set LIBREOFFICE_PATH/SOFFICE_PATH.
+ * For minimal images, use libreoffice corefonts-free alternatives.
+ */

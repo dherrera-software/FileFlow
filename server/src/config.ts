@@ -13,6 +13,7 @@ export const CONFIG = {
   },
   CLEANUP_INTERVAL_MINUTES: 2,
   FILE_RETENTION_MINUTES: parseInt(process.env.FILE_CLEANUP_MINUTES || '10', 10),
+  MAX_CONCURRENT_CONVERSIONS: parseInt(process.env.MAX_CONCURRENT_CONVERSIONS || '2', 10),
   UPLOADS_DIR: path.resolve(process.cwd(), 'uploads'),
   OUTPUTS_DIR: path.resolve(process.cwd(), 'outputs'),
 };
