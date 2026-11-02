@@ -21,8 +21,7 @@ export const SUPPORTED_FORMATS = [
 
 export type FileFormat = (typeof SUPPORTED_FORMATS)[number]
 
-export const MAX_FILE_SIZE_MB = 50
-export const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024
+// Límites ahora se obtienen dinámicamente vía useFileLimits
 
 export type FormatCategory =
   | 'Documentos'
@@ -393,7 +392,7 @@ export type FileValidation =
 /**
  * Validates extension, file size, and non-empty content.
  */
-export function validateFile(file: File): FileValidation {
+export function validateFile(file: File, limits?: { maxFileSizeBytes: number; maxFileSizeMB: number }): FileValidation {
   const format = getFormatFromFileName(file.name)
 
   if (!format) {
@@ -406,11 +405,14 @@ export function validateFile(file: File): FileValidation {
     }
   }
 
-  if (file.size > MAX_FILE_SIZE_BYTES) {
+  const maxBytes = limits?.maxFileSizeBytes ?? 50 * 1024 * 1024;
+  const maxMB = limits?.maxFileSizeMB ?? 50;
+
+  if (file.size > maxBytes) {
     return {
       ok: false,
       reason: 'too-large',
-      message: `Este archivo pesa ${formatFileSize(file.size)}. El límite es de ${MAX_FILE_SIZE_MB} MB por archivo.`,
+      message: `Este archivo pesa ${formatFileSize(file.size)}. El límite es de ${maxMB} MB por archivo.`,
     }
   }
 

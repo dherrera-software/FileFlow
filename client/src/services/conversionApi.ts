@@ -14,182 +14,110 @@ export interface ConversionResponse {
 
 export type ProgressCallback = (progress: number, stage: string) => void;
 
-function getStageMessage(progress: number): string {
-  if (progress <= 15) return 'Subiendo archivo y encolando tarea...';
-  if (progress <= 40) return 'En cola de espera...';
-  if (progress <= 75) return 'Procesando conversión en segundo plano...';
-  if (progress <= 95) return 'Optimizando archivo final...';
-  return '¡Listo! Descargando archivo...';
+function getStatusMessage(status: string): string {
+  switch (status) {
+    case 'pending': return 'En cola de espera...';
+    case 'processing': return 'Procesando conversión...';
+    case 'completed': return '¡Conversión finalizada!';
+    case 'failed': return 'Error en el servidor.';
+    default: return 'Actualizando...';
+  }
 }
 
 /**
  * Sends a file to the FileFlow async backend API for conversion,
  * polls job status, and handles the download.
  */
+async function fetchWithRetry(url: string, options: RequestInit = {}, retries = 3, delay = 800): Promise<Response> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), Number(import.meta.env.VITE_FETCH_TIMEOUT_GENERAL || 30000));
+  
+  options.signal = controller.signal;
+  options.headers = { ...options.headers, 'X-Request-Attempt': String(4 - retries) };
+
+  try {
+    const res = await fetch(url, options);
+    clearTimeout(timeoutId);
+    if (!res.ok && retries > 0 && (res.status >= 500 || res.status === 429)) {
+      throw new Error('Retryable');
+    }
+    return res;
+  } catch (err: any) {
+    clearTimeout(timeoutId);
+    if (retries > 0 && (err.name === 'TypeError' || err.message === 'Retryable')) {
+      await new Promise(r => setTimeout(r, delay));
+      return fetchWithRetry(url, options, retries - 1, delay * 2);
+    }
+    throw err;
+  }
+}
+
 export async function convertAndDownload(
   file: File,
   targetFormat: string,
   onProgress?: ProgressCallback,
+  limits?: { maxFileSizeBytes: number },
 ): Promise<string> {
+  if (limits && file.size > limits.maxFileSizeBytes) {
+    throw { kind: 'validation', message: `El archivo supera el límite de ${Math.round(limits.maxFileSizeBytes/1024/1024)} MB`, retryable: false };
+  }
   const formData = new FormData();
   formData.append('file', file);
   formData.append('targetFormat', targetFormat.toLowerCase());
 
-  const reportProgress = (val: number, customStage?: string) => {
-    const progress = Math.min(val, 100);
-    const stage = customStage || getStageMessage(progress);
-    onProgress?.(Math.round(progress), stage);
-  };
-
-  reportProgress(5, 'Subiendo archivo...');
-
-  // 1. Enqueue job or send for conversion (POST /api/convert)
-  let enqueueRes: Response;
-  try {
-    enqueueRes = await fetch(`${API_BASE_URL}/convert`, {
-      method: 'POST',
-      body: formData,
-    });
-  } catch (netErr: any) {
-    throw new Error(
-      `No se pudo conectar con el servidor backend en ${API_BASE_URL}. Asegúrate de que el backend esté iniciado y accesible.`
-    );
-  }
+  // 1. Enqueue job
+  const enqueueRes = await fetchWithRetry(`${API_BASE_URL}/convert`, { method: 'POST', body: formData });
 
   if (!enqueueRes.ok) {
-    let errorMsg = `Error del servidor (${enqueueRes.status})`;
-    try {
-      const data = await enqueueRes.json();
-      if (data && typeof data.error === 'string') {
-        errorMsg = data.error;
-      }
-    } catch {}
-    throw new Error(errorMsg);
+    const data = await enqueueRes.json().catch(() => ({}));
+    throw new Error(data.error || `Error del servidor (${enqueueRes.status})`);
   }
 
-  const contentType = enqueueRes.headers.get('content-type') || '';
-
-  // Manejo de respuesta binaria directa (Modo síncrono / Cloudflare Workers)
-  if (!contentType.includes('application/json')) {
-    reportProgress(90, 'Finalizando y descargando archivo...');
-    const disposition = enqueueRes.headers.get('content-disposition');
-    let downloadFileName = `${file.name.replace(/\.[^/.]+$/, '')}.${targetFormat.toLowerCase()}`;
-    if (disposition && disposition.includes('filename=')) {
-      const match = disposition.match(/filename="?([^";]+)"?/i);
-      if (match?.[1]) {
-        downloadFileName = match[1].trim();
-      }
-    }
-
-    const blob = await enqueueRes.blob();
-    reportProgress(100, '¡Completado!');
-
-    const downloadUrl = window.URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = downloadUrl;
-    link.download = downloadFileName;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    window.URL.revokeObjectURL(downloadUrl);
-
-    return downloadFileName;
-  }
-
-  // Manejo de respuesta con cola asíncrona (Node.js Express / Job Queue)
   const enqueueData = await enqueueRes.json();
   const jobId = enqueueData.jobId;
 
-  if (!jobId) {
-    throw new Error('No se pudo obtener el ID de la tarea de conversión.');
-  }
+  if (!jobId) throw new Error('No se pudo obtener el ID de la tarea.');
 
-  reportProgress(20, 'Tarea encolada. Iniciando procesamiento...');
+  onProgress?.(10, 'Tarea encolada...');
 
-  // 2. Poll job status (GET /api/status/:jobId)
-  let downloadFileName = `${file.name.replace(/\.[^/.]+$/, '')}.${targetFormat.toLowerCase()}`;
-  let currentProgress = 20;
-  const pollIntervalMs = 800;
-  const maxAttempts = 375; // up to 5 minutes for heavy files
+  // 2. Poll job status
   let attempts = 0;
+  const MAX_ATTEMPTS = 60;
 
-  while (attempts < maxAttempts) {
-    await new Promise((resolve) => setTimeout(resolve, pollIntervalMs));
-    attempts++;
-
-    let statusRes: Response;
+  while (attempts < MAX_ATTEMPTS) {
     try {
-      statusRes = await fetch(`${API_BASE_URL}/status/${jobId}`);
-    } catch {
-      // Reintentar brevemente si hay un corte transitorio de red antes de fallar
-      continue;
-    }
-
-    if (!statusRes.ok) {
-      throw new Error(`Error al consultar estado de la tarea (${statusRes.status})`);
-    }
-
-    const statusData = await statusRes.json();
-
-    if (statusData.status === 'completed') {
-      if (statusData.downloadFileName) {
-        downloadFileName = statusData.downloadFileName;
+      const statusRes = await fetchWithRetry(`${API_BASE_URL}/status/${jobId}`, {}, 1, 2000);
+      const statusData = await statusRes.json();
+      
+      if (statusData.status === 'completed') {
+        onProgress?.(100, getStatusMessage('completed'));
+        
+        // 3. Download
+        const downloadRes = await fetchWithRetry(`${API_BASE_URL}/download/${jobId}`);
+        const blob = await downloadRes.blob();
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = statusData.downloadFileName || 'converted_file';
+        link.click();
+        window.URL.revokeObjectURL(url);
+        
+        return statusData.downloadFileName;
       }
-      reportProgress(90, '¡Conversión completada!');
-      break;
-    }
 
-    if (statusData.status === 'failed') {
-      throw new Error(statusData.error || 'La conversión falló en el servidor.');
-    }
+      if (statusData.status === 'failed') throw new Error(statusData.error || 'La conversión falló.');
 
-    // Incremental progress while pending or processing
-    if (statusData.status === 'processing') {
-      currentProgress = Math.min(currentProgress + 2.5, 88);
-      reportProgress(currentProgress, 'Procesando archivo pesados en segundo plano...');
-    } else {
-      currentProgress = Math.min(currentProgress + 1, 45);
-      reportProgress(currentProgress, 'En cola de espera...');
+      onProgress?.(statusData.status === 'pending' ? 20 : 60, getStatusMessage(statusData.status));
+      attempts++;
+      await new Promise(r => setTimeout(r, 2000));
+    } catch (e) {
+      if (attempts++ > 3) throw new Error('Error de conexión persistente.');
+      onProgress?.(20, 'Reintentando conexión...');
+      await new Promise(r => setTimeout(r, 3000));
     }
   }
 
-  if (attempts >= maxAttempts) {
-    throw new Error('La conversión tardó demasiado tiempo y expiró el tiempo de espera.');
-  }
-
-  // 3. Download converted file (GET /api/download/:jobId)
-  reportProgress(95, 'Descargando resultado...');
-  let downloadRes: Response;
-  try {
-    downloadRes = await fetch(`${API_BASE_URL}/download/${jobId}`);
-  } catch (err: any) {
-    throw new Error(`Error de conexión al descargar el archivo: ${err?.message || err}`);
-  }
-  if (!downloadRes.ok) {
-    let errorMsg = `Error al descargar archivo (${downloadRes.status})`;
-    try {
-      const data = await downloadRes.json();
-      if (data && typeof data.error === 'string') {
-        errorMsg = data.error;
-      }
-    } catch {}
-    throw new Error(errorMsg);
-  }
-
-  const blob = await downloadRes.blob();
-  reportProgress(100, '¡Completado!');
-
-  // Trigger browser download
-  const downloadUrl = window.URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = downloadUrl;
-  link.download = downloadFileName;
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  window.URL.revokeObjectURL(downloadUrl);
-
-  return downloadFileName;
+  throw new Error('La tarea ha expirado.');
 }
 
 /**
@@ -197,7 +125,10 @@ export async function convertAndDownload(
  */
 export async function checkBackendHealth(): Promise<boolean> {
   try {
-    const res = await fetch(`${API_BASE_URL}/health`);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+    const res = await fetch(`${API_BASE_URL}/health`, { signal: controller.signal });
+    clearTimeout(timeoutId);
     return res.ok;
   } catch {
     return false;

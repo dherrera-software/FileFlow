@@ -7,9 +7,16 @@ export type ButtonSize = 'sm' | 'md' | 'lg'
 const BASE =
   'inline-flex items-center justify-center gap-2 rounded-full font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-45'
 
+const HOVER_ACTIVE =
+  'transition-colors hover:border-accent-strong hover:bg-accent-active dark:hover:border-accent-strong dark:hover:bg-accent-soft'
+
+const ACTIVE = 'active:scale-[0.98] active:bg-accent-active'
+
 const VARIANTS: Record<ButtonVariant, string> = {
   primary:
-    'border border-accent bg-accent text-white shadow-primary hover:border-accent-strong hover:bg-accent-strong',
+    'border border-accent bg-accent text-white shadow-primary ' +
+    HOVER_ACTIVE + ' ' + ACTIVE +
+    ' data-[state=open]:bg-accent-soft',
   secondary:
     'border border-line bg-white text-ink hover:border-accent hover:text-accent-ink dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:border-accent dark:hover:text-accent-ink',
   dark:

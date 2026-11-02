@@ -1,8 +1,10 @@
 import { useCallback, useRef, useState } from 'react'
+import { useAnnouncer } from './useAnnouncer'
 import type { ChangeEvent, DragEvent } from 'react'
 import type { ConversionPair, FileFormat } from '../utils/formats'
 import { getTargetsForFormat, validateFile } from '../utils/formats'
 import { convertAndDownload } from '../services/conversionApi'
+import { useFileLimits } from './useFileLimits'
 
 export type FileError = {
   fileName: string
@@ -18,6 +20,8 @@ export type FileError = {
  * exists — nothing else in the page needs to change.
  */
 export function useConverter() {
+  const limits = useFileLimits();
+  const { announce } = useAnnouncer();
   const [file, setFile] = useState<File | null>(null)
   const [format, setFormat] = useState<FileFormat | null>(null)
   const [target, setTarget] = useState<string | null>(null)
@@ -27,7 +31,7 @@ export function useConverter() {
   const [isConverting, setIsConverting] = useState(false)
   const [conversionProgress, setConversionProgress] = useState(0)
   const [conversionStage, setConversionStage] = useState('')
-  const [conversionError, setConversionError] = useState<string | null>(null)
+  const [conversionError, setConversionError] = useState<{ message: string; retryable: boolean } | null>(null)
   const [pendingPair, setPendingPair] = useState<ConversionPair | null>(null)
 
   const inputRef = useRef<HTMLInputElement>(null)
@@ -52,7 +56,8 @@ export function useConverter() {
 
   const acceptFile = useCallback(
     (incoming: File) => {
-      const validation = validateFile(incoming)
+      if (!limits.loaded) return;
+      const validation = validateFile(incoming, { maxFileSizeBytes: limits.maxFileSizeBytes, maxFileSizeMB: limits.maxFileSizeMB })
 
       if (!validation.ok) {
         setFile(null)
@@ -84,7 +89,7 @@ export function useConverter() {
       setConversionError(null)
       setNotice(false)
     },
-    [],
+    [limits],
   )
 
   const onFileInputChange = useCallback(
@@ -154,21 +159,23 @@ export function useConverter() {
     setConversionStage('Iniciando...')
     setConversionError(null)
     setNotice(false)
+    announce('Iniciando conversión');
 
     try {
       await convertAndDownload(file, target, (progress, stage) => {
         setConversionProgress(progress)
         setConversionStage(stage)
-      })
+      }, limits)
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Ocurrió un error inesperado durante la conversión.'
-      setConversionError(message)
+      const isNetworkError = message.includes('conectar') || message.includes('conexión') || message.includes('expirado')
+      setConversionError({ message, retryable: isNetworkError })
     } finally {
       setIsConverting(false)
       setConversionProgress(0)
       setConversionStage('')
     }
-  }, [file, format, target, isConverting])
+  }, [file, format, target, isConverting, announce, limits])
 
   /**
    * Called when a popular-conversion card is picked. Applies the target
@@ -208,7 +215,9 @@ export function useConverter() {
     conversionStage,
     conversionError,
     pendingPair,
-    canConvert: Boolean(file && format && target && !isConverting),
+    limitsReady: limits.loaded,
+    limits,
+    canConvert: Boolean(file && format && target && !isConverting && limits.loaded),
     inputRef,
     actions: {
       openFilePicker,
