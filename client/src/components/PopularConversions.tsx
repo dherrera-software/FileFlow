@@ -8,14 +8,14 @@ type PopularConversionsProps = {
   onSelectPair: (pair: ConversionPair) => void
 }
 
+/** Only categories that actually contain quick-access conversions. */
 const CATEGORY_TABS: ('Todos' | FormatCategory)[] = [
   'Todos',
-  'Documentos',
-  'Imágenes',
-  'Hojas de cálculo',
-  'Presentaciones',
-  'Audio',
-  'Video',
+  ...Array.from(
+    new Set<FormatCategory>(
+      POPULAR_CONVERSIONS.map((pair) => FORMAT_CATEGORY_MAP[pair.source]),
+    ),
+  ),
 ]
 
 export function PopularConversions({ onSelectPair }: PopularConversionsProps) {

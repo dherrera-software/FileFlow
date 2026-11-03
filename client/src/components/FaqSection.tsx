@@ -9,7 +9,7 @@ export function FaqSection() {
         </h2>
 
         <dl className="mt-4 grid grid-cols-1 gap-x-10 gap-y-6 sm:grid-cols-2">
-          {FAQ_ITEMS.map((item) => (
+          {FAQ_ITEMS.filter((item) => item.enabled).map((item) => (
             <div key={item.question} className="border-t border-ink/10 pt-4 dark:border-zinc-800">
               <dt className="text-[13.5px] font-medium text-ink">{item.question}</dt>
               <dd className="mt-1.5 max-w-[46ch] text-[12.5px] leading-[1.7] text-ink-muted">

@@ -37,7 +37,7 @@ export const es = {
     maxSize: 'hasta {maxMB} MB',
     titleIdle: 'Arrastra un archivo aquí',
     titleDragging: 'Suelta el archivo para seleccionarlo',
-    subtitleIdle: 'o elígelo desde tu dispositivo — soporta documentos, imágenes, datos, presentaciones, audio y video.',
+    subtitleIdle: 'o elígelo desde tu dispositivo — soporta documentos de texto, imágenes y hojas de cálculo/datos.',
     subtitleDragging: 'Suelta para verificar el formato y ver las opciones de conversión.',
     selectButton: 'Seleccionar archivo',
     chooseAnother: 'Elegir otro archivo',

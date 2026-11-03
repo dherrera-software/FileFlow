@@ -20,14 +20,12 @@ import { useTranslation } from '../i18n/context'
 
 const SUPPORTED_FORMATS_ID = 'supported-formats'
 
+/** Only categories with at least one Worker-convertible source format. */
 const CATEGORY_CHIPS: ('Todos' | FormatCategory)[] = [
   'Todos',
-  'Documentos',
-  'Imágenes',
-  'Hojas de cálculo',
-  'Presentaciones',
-  'Audio',
-  'Video',
+  ...Array.from(
+    new Set<FormatCategory>(SUPPORTED_FORMATS.map((format) => FORMAT_CATEGORY_MAP[format])),
+  ),
 ]
 
 export function FileUploadDropzone({ controller }: { controller: ConverterController }) {
@@ -200,8 +198,8 @@ export function FileUploadDropzone({ controller }: { controller: ConverterContro
             >
               {isDragging
                 ? (t('dropzone.dropToCheck') || 'Suelta para verificar el formato y ver las opciones de conversión.')
-                : (t('dropzone.dropSupports', { formats: 'documentos, imágenes, hojas de cálculo, presentaciones, audio y video' }) ||
-                  'o elígelo desde tu dispositivo — soporta documentos, imágenes, datos, presentaciones, audio y video.')}
+                : (t('dropzone.dropSupports', { formats: 'documentos de texto, imágenes y hojas de cálculo/datos' }) ||
+                  'o elígelo desde tu dispositivo — soporta documentos de texto, imágenes y hojas de cálculo/datos.')}
             </p>
 
             {!limitsReady && (
@@ -259,7 +257,7 @@ export function FileUploadDropzone({ controller }: { controller: ConverterContro
               <li key={supported}><FormatBadge format={supported} /></li>
             ))}
             <li className="ml-1 text-[11.5px] text-ink-faint">
-              {t('dropzone.maxSize', { maxMB: limits?.maxFileSizeMB || 50 }) || `hasta ${limits?.maxFileSizeMB || 50} MB`}
+              {t('dropzone.maxSize', { maxMB: limits?.maxFileSizeMB ?? 25 }) || `hasta ${limits?.maxFileSizeMB ?? 25} MB`}
             </li>
           </ul>
         </div>

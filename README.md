@@ -8,7 +8,23 @@
 ![pnpm](https://img.shields.io/badge/pnpm-%3E%3D9.0.0-orange)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 
-Conversor universal de archivos multipropósito de alta fidelidad. Soporta documentos, imágenes, hojas de cálculo, presentaciones, audio y video con más de 35 formatos compatibles, conversiones rápidas, seguras y sin pérdida de calidad.
+Conversor de archivos centrado en conversiones 100% compatibles con **Cloudflare Workers**. La interfaz solo expone las combinaciones que el Worker puede procesar sin binarios nativos (LibreOffice, FFmpeg, Sharp, HEIC); el resto de formatos permanece definido pero oculto.
+
+## 📋 Conversiones disponibles
+
+| Origen | Destinos |
+|--------|----------|
+| TXT | PDF, HTML, MD |
+| HTML / HTM | MD |
+| MD / Markdown | HTML |
+| JPG / JPEG | PDF |
+| PNG | PDF |
+| CSV | JSON, XML |
+| TSV | CSV |
+| JSON | CSV |
+| XML | CSV |
+
+> Formatos como DOCX, PDF como origen, RTF, ODT, EPUB, WEBP, HEIC, GIF, BMP, TIFF, SVG, XLSX, XLS, ODS, PPTX, PPT, ODP, audio y video no están disponibles en el Worker actual y permanecen ocultos en el frontend. Algunas conversiones de datos implementadas en `workerConversionService.ts` (por ejemplo JSON→TSV/XML, CSV→TSV o TSV→JSON) siguen bloqueadas por la matriz de validación del backend, por lo que tampoco se muestran.
 
 ---
 

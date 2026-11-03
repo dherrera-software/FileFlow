@@ -4,7 +4,13 @@
  * Supports Documents, Images, Spreadsheets & Data, Presentations, Audio, and Video.
  */
 
-export const SUPPORTED_FORMATS = [
+/**
+ * Full format catalogue. Formats that the Cloudflare Worker cannot convert are
+ * kept defined here (with their descriptions and badge styles) so they can be
+ * re-enabled if a native engine is added later, but they are NOT exposed in
+ * the UI.
+ */
+export const ALL_FORMATS = [
   // Documentos
   'DOCX', 'DOC', 'PDF', 'TXT', 'RTF', 'HTML', 'ODT', 'EPUB', 'MD', 'PDF/A',
   // Imágenes
@@ -19,7 +25,70 @@ export const SUPPORTED_FORMATS = [
   'MP4', 'MOV', 'AVI', 'MKV', 'WEBM',
 ] as const
 
-export type FileFormat = (typeof SUPPORTED_FORMATS)[number]
+export type FileFormat = (typeof ALL_FORMATS)[number]
+
+/**
+ * Conversion matrix matching what the deployed Cloudflare Worker actually
+ * accepts: the pair must be implemented by
+ * `server/src/services/workerConversionService.ts` AND allowed by
+ * `server/src/utils/formatRules.ts` (`CONVERSION_MATRIX`).
+ *
+ * This is the single source of truth for the conversions the UI is allowed to
+ * offer:
+ *
+ * | Source       | Targets           |
+ * |--------------|-------------------|
+ * | TXT          | PDF, HTML, MD     |
+ * | HTML / HTM   | MD                |
+ * | MD           | HTML              |
+ * | JPG / JPEG   | PDF               |
+ * | PNG          | PDF               |
+ * | CSV          | JSON, XML         |
+ * | TSV          | CSV               |
+ * | JSON         | CSV               |
+ * | XML          | CSV               |
+ *
+ * Everything else (DOCX, PDF as source, RTF, ODT, EPUB, WEBP, HEIC, GIF, BMP,
+ * TIFF, SVG, XLSX, XLS, ODS, PPTX, PPT, ODP, audio, video and the data pairs
+ * still blocked by the backend allowlist) stays hidden.
+ */
+export const CONVERSION_TARGETS: Partial<Record<FileFormat, readonly string[]>> = {
+  // Documentos
+  TXT: ['PDF', 'HTML', 'MD'],
+  HTML: ['MD'],
+  MD: ['HTML'],
+
+  // Imágenes
+  JPG: ['PDF'],
+  JPEG: ['PDF'],
+  PNG: ['PDF'],
+
+  // Hojas de cálculo y datos
+  CSV: ['JSON', 'XML'],
+  TSV: ['CSV'],
+  JSON: ['CSV'],
+  XML: ['CSV'],
+}
+
+/**
+ * Formats that can be used as a SOURCE by the Cloudflare Worker.
+ *
+ * Derived from `CONVERSION_TARGETS`, so a format can never be exposed in the
+ * UI without at least one real conversion. Formats absent from the matrix are
+ * kept in `ALL_FORMATS` but hidden from every selector.
+ */
+export const ENABLED_FORMATS: readonly FileFormat[] = Object.keys(
+  CONVERSION_TARGETS,
+) as FileFormat[]
+
+const ENABLED_FORMAT_SET = new Set<FileFormat>(ENABLED_FORMATS)
+
+export function isFormatEnabled(format: FileFormat): boolean {
+  return ENABLED_FORMAT_SET.has(format)
+}
+
+/** Formats exposed across the UI (dropzone, badges, filters). */
+export const SUPPORTED_FORMATS = ENABLED_FORMATS
 
 // Límites ahora se obtienen dinámicamente vía useFileLimits
 
@@ -188,62 +257,6 @@ export const FORMAT_BADGE_STYLES: Record<FileFormat, string> = {
   WEBM: 'bg-emerald-50 text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-300',
 }
 
-/** Complete conversion matrix as requested */
-export const CONVERSION_TARGETS: Record<FileFormat, readonly string[]> = {
-  // Documentos
-  DOCX: ['PDF', 'TXT', 'HTML', 'RTF', 'ODT', 'MD'],
-  DOC: ['DOCX', 'PDF', 'TXT', 'HTML', 'RTF', 'ODT'],
-  PDF: ['DOCX', 'JPG', 'PNG', 'TXT', 'PDF/A'],
-  TXT: ['PDF', 'DOCX', 'HTML', 'MD', 'MP3'],
-  RTF: ['PDF', 'DOCX', 'TXT'],
-  HTML: ['PDF', 'DOCX', 'TXT', 'MD'],
-  ODT: ['PDF', 'DOCX', 'RTF'],
-  EPUB: ['PDF', 'DOCX'],
-  MD: ['PDF', 'DOCX', 'HTML'],
-  'PDF/A': ['PDF', 'DOCX', 'TXT'],
-
-  // Imágenes
-  JPG: ['PNG', 'PDF', 'WEBP'],
-  JPEG: ['PNG', 'PDF', 'WEBP'],
-  PNG: ['JPG', 'PDF', 'WEBP'],
-  WEBP: ['JPG', 'PNG', 'PDF'],
-  HEIC: ['JPG', 'PNG', 'PDF'],
-  GIF: ['JPG', 'PNG', 'MP4'],
-  BMP: ['JPG', 'PNG', 'PDF'],
-  TIFF: ['JPG', 'PNG', 'PDF'],
-  SVG: ['PNG', 'PDF', 'JPG'],
-
-  // Hojas de cálculo y datos
-  XLSX: ['CSV', 'PDF', 'JSON', 'XML', 'TSV'],
-  CSV: ['XLSX', 'PDF', 'JSON', 'XML'],
-  TSV: ['CSV', 'XLSX'],
-  ODS: ['XLSX', 'CSV', 'PDF'],
-  XLS: ['XLSX', 'CSV', 'PDF'],
-  JSON: ['CSV', 'XLSX'],
-  XML: ['CSV', 'XLSX'],
-
-  // Presentaciones
-  PPTX: ['PDF', 'JPG', 'PNG', 'MP4'],
-  PPT: ['PPTX', 'PDF', 'JPG', 'PNG'],
-  ODP: ['PPTX', 'PDF', 'JPG', 'PNG'],
-
-  // Audio
-  WAV: ['MP3', 'FLAC', 'OGG', 'M4A', 'AAC'],
-  MP3: ['WAV', 'M4A', 'AAC', 'OGG'],
-  FLAC: ['MP3', 'WAV'],
-  M4A: ['MP3', 'WAV'],
-  AAC: ['MP3', 'WAV'],
-  OGG: ['MP3', 'WAV'],
-  OPUS: ['MP3', 'WAV'],
-
-  // Video
-  MP4: ['MP3', 'WAV', 'GIF', 'MOV', 'WEBM'],
-  MOV: ['MP4', 'MP3', 'WAV', 'JPG', 'PNG'],
-  AVI: ['MP4', 'MP3', 'WAV', 'JPG', 'PNG'],
-  MKV: ['MP4', 'MP3', 'WAV', 'JPG', 'PNG'],
-  WEBM: ['MP4', 'MP3', 'WAV', 'JPG', 'PNG'],
-}
-
 export const EXTENSION_TO_FORMAT: Record<string, FileFormat> = {
   // Documentos
   docx: 'DOCX',
@@ -302,56 +315,29 @@ export const EXTENSION_TO_FORMAT: Record<string, FileFormat> = {
   webm: 'WEBM',
 }
 
-export const ACCEPTED_EXTENSIONS: readonly string[] = Object.keys(EXTENSION_TO_FORMAT).map(
-  (extension) => `.${extension}`,
-)
+export const ACCEPTED_EXTENSIONS: readonly string[] = Object.entries(EXTENSION_TO_FORMAT)
+  .filter(([, format]) => isFormatEnabled(format))
+  .map(([extension]) => `.${extension}`)
 
 export type ConversionPair = {
   source: FileFormat
   target: string
 }
 
-export const POPULAR_CONVERSIONS: readonly ConversionPair[] = [
-  // Documentos
-  { source: 'DOCX', target: 'PDF' },
-  { source: 'PDF', target: 'DOCX' },
-  { source: 'PDF', target: 'JPG' },
-  { source: 'TXT', target: 'PDF' },
-  { source: 'TXT', target: 'MP3' },
-  { source: 'MD', target: 'PDF' },
-  { source: 'EPUB', target: 'PDF' },
-  { source: 'PDF', target: 'PDF/A' },
+/**
+ * Every conversion the Cloudflare Worker can actually perform.
+ *
+ * Derived from `CONVERSION_TARGETS`, so the quick-access grid can never drift
+ * from the real matrix or offer a pair the backend will reject.
+ */
+export const AVAILABLE_CONVERSIONS: readonly ConversionPair[] = Object.entries(
+  CONVERSION_TARGETS,
+).flatMap(([source, targets]) =>
+  (targets ?? []).map((target) => ({ source: source as FileFormat, target })),
+)
 
-  // Imágenes
-  { source: 'JPG', target: 'PNG' },
-  { source: 'PNG', target: 'WEBP' },
-  { source: 'WEBP', target: 'JPG' },
-  { source: 'HEIC', target: 'JPG' },
-  { source: 'SVG', target: 'PNG' },
-  { source: 'GIF', target: 'MP4' },
-
-  // Hojas de cálculo y datos
-  { source: 'XLSX', target: 'CSV' },
-  { source: 'CSV', target: 'XLSX' },
-  { source: 'XLSX', target: 'PDF' },
-  { source: 'JSON', target: 'XLSX' },
-  { source: 'XML', target: 'CSV' },
-
-  // Presentaciones
-  { source: 'PPTX', target: 'PDF' },
-  { source: 'PPTX', target: 'MP4' },
-
-  // Audio
-  { source: 'WAV', target: 'MP3' },
-  { source: 'MP3', target: 'WAV' },
-  { source: 'FLAC', target: 'MP3' },
-
-  // Video
-  { source: 'MP4', target: 'GIF' },
-  { source: 'MP4', target: 'MP3' },
-  { source: 'MOV', target: 'MP4' },
-  { source: 'WEBM', target: 'MP4' },
-]
+/** Quick-access conversions: the full set of supported pairs. */
+export const POPULAR_CONVERSIONS: readonly ConversionPair[] = AVAILABLE_CONVERSIONS
 
 export function getFileExtension(fileName: string): string {
   const dotIndex = fileName.lastIndexOf('.')
@@ -365,11 +351,11 @@ export function getFormatFromFileName(fileName: string): FileFormat | null {
 }
 
 export function getTargetsForFormat(format: FileFormat): readonly string[] {
-  return CONVERSION_TARGETS[format] || []
+  return CONVERSION_TARGETS[format] ?? []
 }
 
 export function isConversionSupported(pair: ConversionPair): boolean {
-  const targets = CONVERSION_TARGETS[pair.source] || []
+  const targets = CONVERSION_TARGETS[pair.source] ?? []
   return targets.includes(pair.target)
 }
 
@@ -395,18 +381,18 @@ export type FileValidation =
 export function validateFile(file: File, limits?: { maxFileSizeBytes: number; maxFileSizeMB: number }): FileValidation {
   const format = getFormatFromFileName(file.name)
 
-  if (!format) {
+  if (!format || !isFormatEnabled(format)) {
     const extension = getFileExtension(file.name)
     const named = extension ? `.${extension}` : 'Este tipo de archivo'
     return {
       ok: false,
       reason: 'unsupported-format',
-      message: `${named} no es un formato compatible. FileFlow admite documentos (DOCX, PDF, TXT, RTF, HTML, ODT, EPUB, MD), imágenes (JPG, PNG, WEBP, HEIC, GIF, BMP, TIFF, SVG), hojas de cálculo (XLSX, CSV, TSV, JSON, XML), presentaciones (PPTX, PPT, ODP), audio (WAV, MP3, FLAC, M4A, OGG) y video (MP4, MOV, AVI, MKV, WEBM).`,
+      message: `${named} no es un formato compatible. FileFlow admite documentos de texto (TXT, HTML, MD), imágenes (JPG, PNG) y datos (CSV, TSV, JSON, XML).`,
     }
   }
 
-  const maxBytes = limits?.maxFileSizeBytes ?? 50 * 1024 * 1024;
-  const maxMB = limits?.maxFileSizeMB ?? 50;
+  const maxBytes = limits?.maxFileSizeBytes ?? 25 * 1024 * 1024;
+  const maxMB = limits?.maxFileSizeMB ?? 25;
 
   if (file.size > maxBytes) {
     return {

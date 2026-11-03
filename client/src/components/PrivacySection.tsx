@@ -1,18 +1,21 @@
 import { useState } from 'react'
 import { ArrowRight, ShieldCheck, Sparkles } from 'lucide-react'
 import { CONVERSION_RULES, PRIVACY } from '../utils/content'
-import { CONVERSION_TARGETS } from '../utils/formats'
+import { CONVERSION_TARGETS, isFormatEnabled } from '../utils/formats'
 import type { ConversionPair, FileFormat } from '../utils/formats'
 import { FormatBadge } from './ui/FormatBadge'
 
 const DEFAULT_SELECTED_SOURCES: Record<string, FileFormat> = {
-  Documentos: 'PDF',
+  Documentos: 'TXT',
   Imágenes: 'JPG',
-  'Hojas de cálculo y datos': 'XLSX',
-  Presentaciones: 'PPTX',
-  Audio: 'WAV',
-  Video: 'MP4',
+  'Hojas de cálculo y datos': 'CSV',
 }
+
+/** Leaves only categories/sources that the Cloudflare Worker can convert. */
+const ENABLED_CONVERSION_RULES = CONVERSION_RULES.map((rule) => ({
+  ...rule,
+  sources: rule.sources.filter((source) => isFormatEnabled(source)),
+})).filter((rule) => rule.sources.length > 0)
 
 type PrivacySectionProps = {
   onSelectPair?: (pair: ConversionPair) => void
@@ -67,7 +70,7 @@ export function PrivacySection({ onSelectPair }: PrivacySectionProps = {}) {
 
           {/* Interactive Conversion Matrix by Category */}
           <div className="mt-4 space-y-2.5">
-            {CONVERSION_RULES.map((rule) => {
+            {ENABLED_CONVERSION_RULES.map((rule) => {
               const selectedSource = selectedSources[rule.label] || rule.sources[0]
               const targets = CONVERSION_TARGETS[selectedSource] || []
 

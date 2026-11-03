@@ -10,7 +10,7 @@ export interface FileLimits {
   error: Error | null;
 }
 
-const fallbackMaxFileSizeMB = Number(import.meta.env.VITE_FALLBACK_MAX_FILE_SIZE_MB || 50);
+const fallbackMaxFileSizeMB = Number(import.meta.env.VITE_FALLBACK_MAX_FILE_SIZE_MB || 25);
 const limitsEndpoint = import.meta.env.VITE_API_LIMITS_ENDPOINT || '/health';
 
 export function useFileLimits(): FileLimits & { reloadLimits: () => void } {

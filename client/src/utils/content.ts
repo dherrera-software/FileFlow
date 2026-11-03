@@ -15,13 +15,13 @@ export const HERO = {
   eyebrow: 'Conversor universal de alta fidelidad',
   title: 'Tus archivos, en el formato correcto.',
   description:
-    'Documentos, imágenes, hojas de cálculo, presentaciones, audio y video. Más de 35 formatos compatibles con conversiones rápidas, seguras y sin pérdida de calidad.',
+    'Documentos de texto, imágenes y datos: convierte entre TXT, HTML, MD, JPG, PNG, CSV, TSV, JSON y XML con un procesado rápido, seguro y sin instalar nada.',
 } as const
 
 export const HOW_IT_WORKS_STEPS = [
   {
     title: '1. Arrastra tu archivo',
-    body: 'Sube documentos, imágenes, tablas, presentaciones o multimedia de hasta 50 MB. El sistema detecta el tipo al instante.',
+    body: 'Sube documentos de texto, imágenes o tablas de hasta 25 MB. El sistema detecta el tipo al instante.',
   },
   {
     title: '2. Elige el formato destino',
@@ -55,31 +55,37 @@ export const PRIVACY = {
 
 export const FAQ_ITEMS = [
   {
+    enabled: true,
     question: '¿Se guardan mis archivos en el servidor?',
     answer:
       'No. Los archivos únicamente se reciben temporalmente para realizar la transformación solicitada y se eliminan inmediatamente tras la conversión.',
   },
   {
-    question: '¿Qué formatos y categorías puedo convertir?',
+    enabled: true,
+    question: '¿Qué formatos puedo convertir?',
     answer:
-      'Documentos (DOCX, PDF, TXT, RTF, HTML, ODT, EPUB, MD, PDF/A), imágenes (JPG, PNG, WEBP, HEIC, GIF, BMP, TIFF, SVG), hojas de cálculo (XLSX, CSV, TSV, ODS, JSON, XML), presentaciones (PPTX, PPT, ODP), audio (WAV, MP3, FLAC, M4A, OGG) y video (MP4, MOV, AVI, MKV, WEBM).',
+      'Documentos de texto (TXT, HTML, MD), imágenes (JPG, PNG) y datos (CSV, TSV, JSON, XML). Las conversiones disponibles son: TXT a PDF/HTML/MD, HTML a MD, MD a HTML, JPG/JPEG/PNG a PDF, CSV a JSON/XML, TSV a CSV, JSON a CSV y XML a CSV.',
   },
   {
+    enabled: false,
     question: '¿Puedo convertir video MP4 a GIF o extraer audio?',
     answer:
       'Sí. Puedes transformar videos MP4 a GIF con paleta de alta calidad, convertir GIFs animados a video MP4, o extraer la pista de audio a MP3 o WAV.',
   },
   {
+    enabled: false,
     question: '¿Puedo convertir texto a audio (voz)?',
     answer:
       'Sí. Puedes subir un archivo de texto .TXT y convertirlo a un archivo de audio MP3 narrado con síntesis de voz.',
   },
   {
+    enabled: false,
     question: '¿Puedo convertir fotos HEIC de iPhone a JPG o PNG?',
     answer:
       'Sí. FileFlow procesa imágenes HEIC directamente y te permite descargarlas en JPG, PNG o PDF.',
   },
   {
+    enabled: true,
     question: '¿Es necesario registrarse o pagar?',
     answer:
       'No requiere registro ni suscripción. Todas las funciones de conversión son gratuitas.',

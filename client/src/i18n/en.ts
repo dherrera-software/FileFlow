@@ -37,7 +37,7 @@ export const en = {
     maxSize: 'up to {maxMB} MB',
     titleIdle: 'Drag a file here',
     titleDragging: 'Drop the file to select it',
-    subtitleIdle: 'or choose from your device — supports documents, images, data, presentations, audio and video.',
+    subtitleIdle: 'or choose from your device — supports text documents, images and spreadsheet/data files.',
     subtitleDragging: 'Drop to check the format and see conversion options.',
     selectButton: 'Select file',
     chooseAnother: 'Choose another file',
