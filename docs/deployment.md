@@ -2,21 +2,62 @@
 
 Esta guía detalla el proceso completo para desplegar **FileFlow** de forma 100% gratuita utilizando:
 - **Frontend (`client`)**: Desplegado en **GitHub Pages** mediante GitHub Actions.
-- **Backend (`server`)**: Desplegado en **Cloudflare Workers**.
+- **Backend (`server`)**: Desplegado en **Cloudflare Workers** mediante GitHub Actions.
 
 ---
 
-## 1. Despliegue del Backend en Cloudflare Workers
+## 1. Configuración de Secretos y Variables en GitHub
 
-Cloudflare Workers ofrece una plataforma serverless de baja latencia en el borde (Edge) con soporte nativo de TypeScript y Node.js compatibility.
+Antes de que los workflows funcionen, debes configurar los secretos y variables en tu repositorio.
 
-### Requisitos Previos
-1. Una cuenta activa en [Cloudflare](https://dash.cloudflare.com).
-2. Tener instalado `wrangler` (incluido como devDependency en el proyecto).
+### 1.1 Obtener el API Token de Cloudflare
 
-### Pasos de Despliegue con Wrangler
+1. Ve a [Cloudflare Dashboard → Profile → API Tokens](https://dash.cloudflare.com/profile/api-tokens).
+2. Haz clic en **"Create Token"**.
+3. Usa la plantilla **"Edit Cloudflare Workers"**.
+4. Configura los permisos:
+   - **Account → Cloudflare Workers Scripts → Edit**
+   - **Zone → Workers Routes → Edit** (si usas rutas personalizadas)
+5. Haz clic en **"Continue to summary"** → **"Create Token"**.
+6. **Copia el token** (solo se muestra una vez).
 
-1. Inicia sesión en Cloudflare desde tu terminal:
+### 1.2 Obtener tu Account ID
+
+1. En el [Cloudflare Dashboard](https://dash.cloudflare.com), selecciona tu cuenta.
+2. El **Account ID** aparece en la barra lateral derecha de la página principal, o en la URL: `https://dash.cloudflare.com/<ACCOUNT_ID>`.
+
+### 1.3 Agregar Secretos y Variables en GitHub
+
+Ve a tu repositorio en GitHub → **Settings** → **Secrets and variables** → **Actions**.
+
+#### Pestaña "Secrets" → "New repository secret"
+| Nombre | Valor |
+|--------|-------|
+| `CLOUDFLARE_API_TOKEN` | El token de API que copiaste en el paso 1.1 |
+| `CLOUDFLARE_ACCOUNT_ID` | Tu Account ID del paso 1.2 |
+
+#### Pestaña "Variables" → "New repository variable"
+| Nombre | Valor |
+|--------|-------|
+| `VITE_API_BASE_URL` | URL de tu Worker + `/api` (ej. `https://fileflow-server.<subdominio>.workers.dev/api`) |
+
+---
+
+## 2. Despliegue del Backend en Cloudflare Workers
+
+### Despliegue Automático (CI/CD)
+
+El workflow [`.github/workflows/deploy-worker.yml`](../.github/workflows/deploy-worker.yml) despliega automáticamente el backend cuando:
+- Se hace push a `main`/`master` con cambios en `server/`, `pnpm-lock.yaml` o `pnpm-workspace.yaml`.
+- Se ejecuta manualmente desde **Actions → Deploy Server to Cloudflare Workers → Run workflow**.
+
+El workflow usa la acción oficial [`cloudflare/wrangler-action@v3`](https://github.com/cloudflare/wrangler-action) para ejecutar `wrangler deploy` desde el directorio `server/`.
+
+### Despliegue Manual (opcional)
+
+Si necesitas desplegar manualmente desde tu terminal:
+
+1. Inicia sesión en Cloudflare:
    ```bash
    npx wrangler login
    ```
@@ -36,6 +77,7 @@ Cloudflare Workers ofrece una plataforma serverless de baja latencia en el borde
 
 3. Prueba en modo seco (dry-run):
    ```bash
+   cd server
    npx wrangler deploy --dry-run
    ```
 
@@ -48,9 +90,13 @@ Cloudflare Workers ofrece una plataforma serverless de baja latencia en el borde
 
 ---
 
-## 2. Despliegue del Frontend en GitHub Pages
+## 3. Despliegue del Frontend en GitHub Pages
 
-El frontend está configurado con Vite y un flujo de trabajo automatizado de GitHub Actions en [`.github/workflows/deploy-client.yml`](../.github/workflows/deploy-client.yml).
+### Despliegue Automático (CI/CD)
+
+El workflow [`.github/workflows/deploy-client.yml`](../.github/workflows/deploy-client.yml) despliega automáticamente el frontend cuando:
+- Se hace push a `main`/`master`.
+- Se ejecuta manualmente desde **Actions → Deploy Client to GitHub Pages → Run workflow**.
 
 ### Paso 1: Habilitar GitHub Pages en el Repositorio
 
@@ -59,14 +105,9 @@ El frontend está configurado con Vite y un flujo de trabajo automatizado de Git
 3. En la sección **Build and deployment**:
    - **Source**: Selecciona **GitHub Actions**.
 
-### Paso 2: Configurar la URL del Backend en GitHub
+### Paso 2: Configurar la URL del Backend
 
-1. En el repositorio de GitHub, ve a **Settings** > **Secrets and variables** > **Actions** > pestaña **Variables**.
-2. Haz clic en **New repository variable**.
-3. Añade:
-   - **Name**: `VITE_API_BASE_URL`
-   - **Value**: La URL de tu Worker en Cloudflare con el sufijo `/api` (ej. `https://fileflow-server.<tu-subdominio>.workers.dev/api`).
-4. Haz clic en **Add variable**.
+Asegúrate de haber creado la variable `VITE_API_BASE_URL` como se indica en la sección 1.3.
 
 ### Paso 3: Disparar el Despliegue
 
@@ -78,7 +119,7 @@ El frontend está configurado con Vite y un flujo de trabajo automatizado de Git
 
 ---
 
-## 3. Resolución de Problemas (Troubleshooting)
+## 4. Resolución de Problemas (Troubleshooting)
 
 ### Error de CORS (`CORS blocked: Origin ... is not allowed`)
 - **Causa**: La variable `CLIENT_URL` o `CORS_ORIGINS` en Cloudflare Workers no coincide con la URL desde donde se abre el frontend en el navegador.
@@ -96,3 +137,14 @@ El frontend está configurado con Vite y un flujo de trabajo automatizado de Git
 - **Solución**:
   - Abre la URL del Worker directamente en el navegador (`https://fileflow-server.<tu-subdominio>.workers.dev/api/health`). Si devuelve `{"status":"ok"}`, el Worker está activo.
   - Vuelve a compilar el cliente si modificaste la variable `VITE_API_BASE_URL` en GitHub.
+
+### El workflow `deploy-worker.yml` falla con "Authentication error"
+- **Causa**: El secreto `CLOUDFLARE_API_TOKEN` no está configurado o el token expiró.
+- **Solución**:
+  - Verifica que el secreto exista en **Settings → Secrets and variables → Actions → Secrets**.
+  - Si el token expiró, crea uno nuevo en Cloudflare y actualiza el secreto en GitHub.
+
+### El workflow `deploy-worker.yml` no se ejecuta al hacer push
+- **Causa**: Los cambios no afectaron archivos en `server/`, `pnpm-lock.yaml` o `pnpm-workspace.yaml`.
+- **Solución**:
+  - El workflow solo se ejecuta cuando cambian archivos del backend. Puedes ejecutarlo manualmente desde la pestaña **Actions**.

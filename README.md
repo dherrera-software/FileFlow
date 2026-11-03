@@ -1,6 +1,7 @@
 # FileFlow
 
-![CI](https://github.com/dherrera-software/FileFlow/actions/workflows/deploy-client.yml/badge.svg)
+![Frontend CI](https://github.com/dherrera-software/FileFlow/actions/workflows/deploy-client.yml/badge.svg)
+![Backend CI](https://github.com/dherrera-software/FileFlow/actions/workflows/deploy-worker.yml/badge.svg)
 ![Backend](https://img.shields.io/badge/backend-Cloudflare%20Workers-orange)
 ![Frontend](https://img.shields.io/badge/frontend-GitHub%20Pages-green)
 ![Node](https://img.shields.io/badge/node-%3E%3D20.0.0-brightgreen)
@@ -36,7 +37,8 @@ pnpm dev:server  # Backend en http://localhost:8787 (Wrangler) o http://localhos
 ```
 FileFlow/
 ├── .github/workflows/         # Automatización CI/CD (GitHub Actions)
-│   └── deploy-client.yml      # Despliegue automático de frontend a GitHub Pages
+│   ├── deploy-client.yml      # Despliegue automático de frontend a GitHub Pages
+│   └── deploy-worker.yml      # Despliegue automático de backend a Cloudflare Workers
 ├── client/                    # Frontend SPA (React 19, TypeScript, Tailwind v4, Vite)
 ├── server/                    # Backend API REST (Cloudflare Workers / Hono, TypeScript)
 ├── docs/                      # Documentación detallada
@@ -50,12 +52,29 @@ FileFlow/
 
 ## 🌐 Despliegue en Producción
 
-FileFlow está optimizado para desplegarse de forma 100% gratuita:
+FileFlow está optimizado para desplegarse de forma 100% gratuita con **CI/CD completamente automatizado**:
 
-- **Frontend**: Alojado en **GitHub Pages** mediante GitHub Actions.
-- **Backend**: Alojado en **Cloudflare Workers**.
+| Servicio | Plataforma | Workflow | Trigger |
+|----------|-----------|----------|---------|
+| **Frontend** | GitHub Pages | [`deploy-client.yml`](.github/workflows/deploy-client.yml) | Push a `main` |
+| **Backend** | Cloudflare Workers | [`deploy-worker.yml`](.github/workflows/deploy-worker.yml) | Push a `main` (cambios en `server/`) |
 
-Para instrucciones detalladas de configuración de variables de entorno, CORS y dominios, consulta la [**Guía de Despliegue Completa**](docs/deployment.md).
+### Secretos y Variables Requeridos en GitHub
+
+Configura estos valores en **Settings → Secrets and variables → Actions** de tu repositorio:
+
+#### Secrets (para el backend)
+| Nombre | Descripción |
+|--------|-------------|
+| `CLOUDFLARE_API_TOKEN` | Token de API de Cloudflare con permisos de "Edit Workers" |
+| `CLOUDFLARE_ACCOUNT_ID` | ID de tu cuenta de Cloudflare |
+
+#### Variables (para el frontend)
+| Nombre | Descripción |
+|--------|-------------|
+| `VITE_API_BASE_URL` | URL del Worker + `/api` (ej. `https://fileflow-server.<subdominio>.workers.dev/api`) |
+
+Para instrucciones detalladas de configuración, consulta la [**Guía de Despliegue Completa**](docs/deployment.md).
 
 ---
 
