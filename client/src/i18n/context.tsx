@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import type { Dictionary, Lang } from './types';
 import { es } from './es';
@@ -12,13 +13,18 @@ interface I18nContextValue {
 
 const I18nContext = createContext<I18nContextValue | undefined>(undefined);
 
-export const useTranslation = (): I18nContextValue => {
-  const context = useContext(I18nContext);
-  if (!context) {
-    throw new Error('useTranslation must be used within an I18nProvider');
+function getInitialLang(defaultLang: Lang): Lang {
+  if (typeof window === 'undefined') return defaultLang;
+  const storedLang = localStorage.getItem('fileflow_lang') as Lang | null;
+  if (storedLang && (storedLang === 'es' || storedLang === 'en')) {
+    return storedLang;
   }
-  return context;
-};
+  const navLang = navigator.language?.split('-')[0] as Lang | null;
+  if (navLang && (navLang === 'es' || navLang === 'en')) {
+    return navLang;
+  }
+  return defaultLang;
+}
 
 export const I18nProvider = ({
   children,
@@ -27,19 +33,9 @@ export const I18nProvider = ({
   children: ReactNode;
   defaultLang?: Lang;
 }) => {
-  const [lang, setLang] = useState<Lang>(defaultLang);
+  const [lang, setLang] = useState<Lang>(() => getInitialLang(defaultLang));
 
   useEffect(() => {
-    const storedLang = localStorage.getItem('fileflow_lang') as Lang | null;
-    if (storedLang && (storedLang === 'es' || storedLang === 'en')) {
-      setLang(storedLang);
-    } else {
-      const navLang = (navigator as any).language?.split('-')[0] as Lang | null;
-      if (navLang && (navLang === 'es' || navLang === 'en')) {
-        setLang(navLang);
-      }
-    }
-
     const handleLangChange = (e: Event) => {
       const newLang = (e.target as HTMLSelectElement).value as Lang | null;
       if (newLang && (newLang === 'es' || newLang === 'en')) {
@@ -66,9 +62,14 @@ export const I18nProvider = ({
 
   const t = (path: string, vars?: Record<string, string | number>): string => {
     const keys = path.split('.');
-    let value: any = dictionary;
+    let value: unknown = dictionary;
     for (const k of keys) {
-      value = value?.[k];
+      if (value && typeof value === 'object' && k in value) {
+        value = (value as Record<string, unknown>)[k];
+      } else {
+        value = undefined;
+        break;
+      }
     }
     if (typeof value !== 'string') return path;
     if (!vars) return value;
@@ -83,4 +84,17 @@ export const I18nProvider = ({
       {children}
     </I18nContext.Provider>
   );
+};
+
+export const useTranslation = (): I18nContextValue => {
+  const context = useContext(I18nContext);
+  if (!context) {
+    return {
+      dictionary: es,
+      lang: 'es',
+      t: (path: string) => path,
+      setLanguage: () => { },
+    };
+  }
+  return context;
 };

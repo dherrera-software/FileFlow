@@ -28,7 +28,7 @@ export function useFileLimits(): FileLimits & { reloadLimits: () => void } {
       const res = await fetch(`${API_BASE_URL}${limitsEndpoint}`);
       if (!res.ok) throw new Error('Network response was not ok');
       const data = await res.json();
-      const limits = data.limits || {};
+      const limits = data?.limits || {};
       setState({
         maxFileSizeBytes: limits.maxFileSizeBytes || fallbackMaxFileSizeMB * 1024 * 1024,
         maxFileSizeMB: limits.maxFileSizeMB || fallbackMaxFileSizeMB,
@@ -39,10 +39,12 @@ export function useFileLimits(): FileLimits & { reloadLimits: () => void } {
       });
     } catch (err) {
       console.warn('No se pudieron cargar los límites del backend, usando fallback.', err);
-      if (attempt < 3 && state.error === null) {
-        setTimeout(() => fetchLimits(attempt + 1), 800 * Math.pow(2, attempt));
+      if (attempt < 3) {
+        setTimeout(() => {
+          fetchLimits(attempt + 1);
+        }, 800 * Math.pow(2, attempt));
       } else {
-        setState(prev => ({ ...prev, loaded: true, error: err as Error }));
+        setState(prev => ({ ...prev, loaded: true, error: err instanceof Error ? err : new Error(String(err)) }));
       }
     }
   }, []);

@@ -1,12 +1,11 @@
-import { useRef, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 export function useVirtualList(
   containerRef: React.RefObject<HTMLDivElement>,
   itemsCount: number,
   itemHeight: number = 24
 ) {
-  const startIndexRef = useRef(0);
-  const stopIndexRef = useRef(0);
+  const [range, setRange] = useState({ startIndex: 0, stopIndex: 0 });
 
   const container = containerRef?.current;
 
@@ -14,7 +13,6 @@ export function useVirtualList(
     if (!container) return;
     const containerRect = container.getBoundingClientRect();
     const height = containerRect.height;
-    // compute first index whose bottom is within viewport
     let offset = 0;
     let start = 0;
     for (let i = 0; i < itemsCount; i++) {
@@ -25,25 +23,22 @@ export function useVirtualList(
       }
     }
     const stop = Math.min(start + 15, itemsCount);
-    startIndexRef.current = start;
-    stopIndexRef.current = stop;
+    setRange({ startIndex: start, stopIndex: stop });
   }, [container, itemsCount, itemHeight]);
 
   useEffect(() => {
-    updateVisible();
     const handler = () => {
       updateVisible();
     };
     window.addEventListener('resize', handler);
     window.addEventListener('scroll', handler, { passive: true });
+    const timer = setTimeout(updateVisible, 0);
     return () => {
+      clearTimeout(timer);
       window.removeEventListener('resize', handler);
       window.removeEventListener('scroll', handler);
     };
   }, [updateVisible]);
 
-  return {
-    startIndex: startIndexRef.current,
-    stopIndex: stopIndexRef.current,
-  };
+  return range;
 }

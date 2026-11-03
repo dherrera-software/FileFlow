@@ -1,5 +1,17 @@
-import { createContext, useContext, useReducer, useEffect, useRef, ReactNode, Dispatch } from 'react';
-import { Toast, ToastWithoutId, ToastState, showToast, dismissToast, dismissAllToasts, updateToast, promise } from '../utils/toast';
+/* eslint-disable react-refresh/only-export-components */
+import { createContext, useContext, useReducer, useEffect, useRef, type ReactNode } from 'react';
+import {
+  type Toast,
+  type ToastWithoutId,
+  type ToastState,
+  createToastId,
+  showToast,
+  dismissToast,
+  dismissAllToasts,
+  updateToast,
+  promiseHelper,
+} from '../../utils/toast';
+import { ToastViewport } from './ToastViewport';
 
 type ToastAction =
   | { type: 'ADD'; payload: ToastWithoutId }
@@ -9,18 +21,18 @@ type ToastAction =
 
 const initialState: ToastState = {
   toasts: [],
-  maxVisible: Number(process.env.VITE_TOAST_MAX_VISIBLE || 5),
-  defaultDuration: Number(process.env.VITE_TOAST_DEFAULT_DURATION || 4000),
-  errorDuration: Number(process.env.VITE_TOAST_ERROR_DURATION || 6000),
-  position: (process.env.VITE_TOAST_POSITION as 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left' | 'top-center' | 'bottom-center') || 'top-right',
+  maxVisible: 5,
+  defaultDuration: 4000,
+  errorDuration: 6000,
+  position: 'top-right',
 };
 
 const reducer = (state: ToastState, action: ToastAction): ToastState => {
   switch (action.type) {
     case 'ADD': {
-      const { toast } = action.payload;
-      const id = toast.id || createToastId();
-      const newToast: Toast = { ...toast, id, createdAt: Date.now() };
+      const toastPayload = action.payload;
+      const id = createToastId();
+      const newToast: Toast = { ...toastPayload, id, createdAt: Date.now() };
       let toasts = [...state.toasts].filter(t => t.id !== id);
       toasts = [newToast, ...toasts].slice(0, state.maxVisible);
       return { ...state, toasts };
@@ -31,86 +43,91 @@ const reducer = (state: ToastState, action: ToastAction): ToastState => {
       return { ...state, toasts: [] };
     case 'UPDATE': {
       const { id, patch } = action.payload;
-      return updateToast(id, patch, state);
+      updateToast(id, patch, state);
+      return { ...state, toasts: [...state.toasts] };
     }
     default:
       return state;
   }
 };
 
-const ToastContext = createContext<{
+interface ToastContextValue {
   toasts: Toast[];
   show: (toast: ToastWithoutId) => string;
   dismiss: (id: string) => void;
   dismissAll: () => void;
   update: (id: string, patch: Partial<ToastWithoutId>) => void;
-  promise: <T,>(promise: Promise<T>, options: {
-    loading: ToastWithoutId;
-    success: (data: T) => ToastWithoutId;
-    error: (err: Error) => ToastWithoutId;
-  }) => Promise<T>;
-} | null>(null);
+  promise: <T, >(
+    promiseToTrack: Promise<T>,
+    options: {
+      loading: ToastWithoutId;
+      success: (data: T) => ToastWithoutId;
+      error: (err: Error) => ToastWithoutId;
+    }
+  ) => Promise<T>;
+}
 
-export const ToastProvider = ({ children, position = 'top-right', maxVisible = 5 }: { children: ReactNode; position?: 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left' | 'top-center' | 'bottom-center'; maxVisible?: number }) => {
+const ToastContext = createContext<ToastContextValue | null>(null);
+
+export const ToastProvider = ({
+  children,
+  position = 'top-right',
+  maxVisible = 5,
+}: {
+  children: ReactNode;
+  position?: 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left' | 'top-center' | 'bottom-center';
+  maxVisible?: number;
+}) => {
   const [state, dispatch] = useReducer(reducer, { ...initialState, position, maxVisible });
   const mountedRef = useRef(true);
 
   useEffect(() => {
     mountedRef.current = true;
-    return () => { mountedRef.current = false; };
+    return () => {
+      mountedRef.current = false;
+    };
   }, []);
 
-  // Filtrar toasts que deben mostrarse (resppetar maxVisible y posición)
-  const visibleToasts = state.toasts.filter(t => mountedRef.current);
+  const visibleToasts = state.toasts;
 
-  const context = {
+  const context: ToastContextValue = {
     toasts: visibleToasts,
     show: (toast: ToastWithoutId) => {
       const id = showToast(toast, state);
-      // Asegurar maxVisible después de añadir
-      if (state.toasts.length > state.maxVisible) {
-        state.toasts = state.toasts.slice(0, state.maxVisible);
-      }
+      dispatch({ type: 'ADD', payload: toast });
       return id;
     },
     dismiss: (id: string) => {
       dismissToast(id, state);
+      dispatch({ type: 'DISMISS', payload: id });
     },
     dismissAll: () => {
       dismissAllToasts(state);
+      dispatch({ type: 'DISMISS_ALL' });
     },
     update: (id: string, patch: Partial<ToastWithoutId>) => {
       updateToast(id, patch, state);
+      dispatch({ type: 'UPDATE', payload: { id, patch } });
     },
-    promise: <T>(promise: Promise<T>, options: {
-      loading: ToastWithoutId;
-      success: (data: T) => ToastWithoutId;
-      error: (err: Error) => ToastWithoutId;
-    }) => promise(promise, options, state),
+    promise: <T,>(
+      promiseToTrack: Promise<T>,
+      options: {
+        loading: ToastWithoutId;
+        success: (data: T) => ToastWithoutId;
+        error: (err: Error) => ToastWithoutId;
+      }
+    ) => promiseHelper(promiseToTrack, options, state),
   };
-
-  if (!mountedRef.current) return null;
 
   return (
     <ToastContext.Provider value={context}>
       {children}
-      <ToastViewport toasts={visibleToasts} position={state.position} />
+      <ToastViewport toasts={visibleToasts} position={state.position} onDismiss={context.dismiss} />
     </ToastContext.Provider>
   );
 };
 
-export const useToasts = (): {
-  toasts: Toast[];
-  show: (toast: ToastWithoutId) => string;
-  dismiss: (id: string) => void;
-  dismissAll: () => void;
-  update: (id: string, patch: Partial<ToastWithoutId>) => void;
-  promise: <T>(promise: Promise<T>, options: {
-    loading: ToastWithoutId;
-    success: (data: T) => ToastWithoutId;
-    error: (err: Error) => ToastWithoutId;
-  }) => Promise<T>;
-} => {
+export const useToasts = (): ToastContextValue => {
   const context = useContext(ToastContext);
   if (!context) {
     throw new Error('useToasts must be used within a ToastProvider');

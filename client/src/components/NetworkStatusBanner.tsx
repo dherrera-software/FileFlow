@@ -1,22 +1,29 @@
-import { useState, useEffect } from 'react';
-import { Wifi, WifiOff, Loader2, RefreshCw } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Wifi, WifiOff, RefreshCw } from 'lucide-react';
 import { cn } from '../utils/cn';
 
-export function NetworkStatusBanner({ isOnline, isBackendReachable, onRetry }: { isOnline: boolean; isBackendReachable: boolean; onRetry: () => void }) {
-  const [show, setShow] = useState(false);
+export function NetworkStatusBanner({
+  isOnline,
+  isBackendReachable,
+  onRetry,
+}: {
+  isOnline: boolean;
+  isBackendReachable: boolean;
+  onRetry: () => void;
+}) {
+  const isDisconnected = !isOnline || !isBackendReachable;
+  const [showReconnected, setShowReconnected] = useState(false);
+  const prevDisconnected = useRef(isDisconnected);
 
   useEffect(() => {
-    if (!isOnline || !isBackendReachable) {
-      setShow(true);
-    } else {
-      const timer = setTimeout(() => setShow(false), 3000);
+    if (prevDisconnected.current && !isDisconnected) {
+      const timer = setTimeout(() => setShowReconnected(false), 3000);
       return () => clearTimeout(timer);
     }
-  }, [isOnline, isBackendReachable]);
+    prevDisconnected.current = isDisconnected;
+  }, [isDisconnected]);
 
-  if (!show) return null;
-
-  const isDisconnected = !isOnline || !isBackendReachable;
+  if (!isDisconnected && !showReconnected) return null;
 
   return (
     <div
@@ -32,6 +39,7 @@ export function NetworkStatusBanner({ isOnline, isBackendReachable, onRetry }: {
           <WifiOff className="size-4" />
           <span>Sin conexión o servidor no disponible.</span>
           <button 
+            type="button"
             onClick={onRetry}
             className="ml-2 flex items-center gap-1 rounded-full bg-white/20 px-3 py-1 text-[11px] hover:bg-white/30"
           >

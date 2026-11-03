@@ -25,13 +25,14 @@ function getStatusMessage(status: string): string {
 }
 
 /**
- * Sends a file to the FileFlow async backend API for conversion,
- * polls job status, and handles the download.
+ * Sends a file to the FileFlow API for conversion,
+ * supports both direct binary download (Cloudflare Workers)
+ * and asynchronous job polling (Express/Queue).
  */
 async function fetchWithRetry(url: string, options: RequestInit = {}, retries = 3, delay = 800): Promise<Response> {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), Number(import.meta.env.VITE_FETCH_TIMEOUT_GENERAL || 30000));
-  
+
   options.signal = controller.signal;
   options.headers = { ...options.headers, 'X-Request-Attempt': String(4 - retries) };
 
@@ -42,9 +43,10 @@ async function fetchWithRetry(url: string, options: RequestInit = {}, retries = 
       throw new Error('Retryable');
     }
     return res;
-  } catch (err: any) {
+  } catch (err: unknown) {
     clearTimeout(timeoutId);
-    if (retries > 0 && (err.name === 'TypeError' || err.message === 'Retryable')) {
+    const isError = err instanceof Error;
+    if (retries > 0 && (isError && (err.name === 'TypeError' || err.message === 'Retryable'))) {
       await new Promise(r => setTimeout(r, delay));
       return fetchWithRetry(url, options, retries - 1, delay * 2);
     }
@@ -59,28 +61,67 @@ export async function convertAndDownload(
   limits?: { maxFileSizeBytes: number },
 ): Promise<string> {
   if (limits && file.size > limits.maxFileSizeBytes) {
-    throw { kind: 'validation', message: `El archivo supera el límite de ${Math.round(limits.maxFileSizeBytes/1024/1024)} MB`, retryable: false };
+    throw { kind: 'validation', message: `El archivo supera el límite de ${Math.round(limits.maxFileSizeBytes / 1024 / 1024)} MB`, retryable: false };
   }
   const formData = new FormData();
   formData.append('file', file);
   formData.append('targetFormat', targetFormat.toLowerCase());
 
-  // 1. Enqueue job
+  onProgress?.(10, 'Subiendo archivo al servidor...');
+
+  // 1. Enviar solicitud de conversión
   const enqueueRes = await fetchWithRetry(`${API_BASE_URL}/convert`, { method: 'POST', body: formData });
 
   if (!enqueueRes.ok) {
-    const data = await enqueueRes.json().catch(() => ({}));
-    throw new Error(data.error || `Error del servidor (${enqueueRes.status})`);
+    let errorMsg = `Error del servidor (${enqueueRes.status})`;
+    try {
+      const data = await enqueueRes.json();
+      if (data && typeof data.error === 'string') {
+        errorMsg = data.error;
+      }
+    } catch {
+      // ignore json parse error
+    }
+    throw new Error(errorMsg);
   }
 
+  const contentType = enqueueRes.headers.get('content-type') || '';
+
+  // Modo A: Respuesta binaria directa (Cloudflare Workers / modo síncrono)
+  if (!contentType.includes('application/json')) {
+    onProgress?.(90, 'Finalizando y descargando archivo...');
+    const disposition = enqueueRes.headers.get('content-disposition');
+    let downloadFileName = `${file.name.replace(/\.[^/.]+$/, '')}.${targetFormat.toLowerCase()}`;
+    if (disposition && disposition.includes('filename=')) {
+      const match = disposition.match(/filename="?([^";]+)"?/i);
+      if (match?.[1]) {
+        downloadFileName = match[1].trim();
+      }
+    }
+
+    const blob = await enqueueRes.blob();
+    onProgress?.(100, '¡Completado!');
+
+    const downloadUrl = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+    link.download = downloadFileName;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(downloadUrl);
+
+    return downloadFileName;
+  }
+
+  // Modo B: Cola asíncrona de tareas (Node.js Express / Job Queue)
   const enqueueData = await enqueueRes.json();
   const jobId = enqueueData.jobId;
 
   if (!jobId) throw new Error('No se pudo obtener el ID de la tarea.');
 
-  onProgress?.(10, 'Tarea encolada...');
+  onProgress?.(20, 'Tarea encolada. Procesando...');
 
-  // 2. Poll job status
   let attempts = 0;
   const MAX_ATTEMPTS = 60;
 
@@ -88,36 +129,41 @@ export async function convertAndDownload(
     try {
       const statusRes = await fetchWithRetry(`${API_BASE_URL}/status/${jobId}`, {}, 1, 2000);
       const statusData = await statusRes.json();
-      
+
       if (statusData.status === 'completed') {
         onProgress?.(100, getStatusMessage('completed'));
-        
-        // 3. Download
+
+        // 3. Descarga
         const downloadRes = await fetchWithRetry(`${API_BASE_URL}/download/${jobId}`);
         const blob = await downloadRes.blob();
         const url = window.URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = statusData.downloadFileName || 'converted_file';
+        link.download = statusData.downloadFileName || `${file.name.replace(/\.[^/.]+$/, '')}.${targetFormat.toLowerCase()}`;
+        document.body.appendChild(link);
         link.click();
+        link.remove();
         window.URL.revokeObjectURL(url);
-        
-        return statusData.downloadFileName;
+
+        return statusData.downloadFileName || link.download;
       }
 
-      if (statusData.status === 'failed') throw new Error(statusData.error || 'La conversión falló.');
+      if (statusData.status === 'failed') throw new Error(statusData.error || 'La conversión falló en el servidor.');
 
-      onProgress?.(statusData.status === 'pending' ? 20 : 60, getStatusMessage(statusData.status));
+      onProgress?.(statusData.status === 'pending' ? 30 : 70, getStatusMessage(statusData.status));
       attempts++;
       await new Promise(r => setTimeout(r, 2000));
-    } catch (e) {
-      if (attempts++ > 3) throw new Error('Error de conexión persistente.');
+    } catch (e: unknown) {
+      if (attempts++ > 3) {
+        const errorText = e instanceof Error ? e.message : 'Error de conexión persistente.';
+        throw new Error(errorText, { cause: e });
+      }
       onProgress?.(20, 'Reintentando conexión...');
       await new Promise(r => setTimeout(r, 3000));
     }
   }
 
-  throw new Error('La tarea ha expirado.');
+  throw new Error('La tarea de conversión ha expirado.');
 }
 
 /**

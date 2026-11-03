@@ -1,5 +1,3 @@
-import { v4 as uuidv4 } from 'uuid';
-
 export interface Toast {
   id: string;
   type: 'success' | 'error' | 'warning' | 'info' | 'loading';
@@ -17,7 +15,10 @@ export interface Toast {
 export type ToastWithoutId = Omit<Toast, 'id' | 'createdAt'>;
 
 export function createToastId(): string {
-  return uuidv4();
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return 'toast_' + Math.random().toString(36).substring(2, 9) + Date.now().toString(36);
 }
 
 /**
@@ -59,8 +60,8 @@ export function updateToast(id: string, patch: Partial<ToastWithoutId>, state: T
  * Helper que muestra loading, y al resolverse muestra success,
  * o al fallar muestra error. Retorna la promesa original.
  */
-export async function promise<T>(
-  promise: Promise<T>,
+export async function promiseHelper<T>(
+  p: Promise<T>,
   options: {
     loading: ToastWithoutId;
     success: (data: T) => ToastWithoutId;
@@ -68,23 +69,21 @@ export async function promise<T>(
   },
   state: ToastState,
 ): Promise<T> {
-  // Mostrar loading
   const loadingId = showToast({ ...options.loading, dismissible: false, duration: 0 }, state);
   try {
-    const data = await promise;
-    // Success: reemplazar loading por success
+    const data = await p;
     const successToast = { ...options.success(data), dismissible: true, duration: state.defaultDuration };
     updateToast(loadingId, { ...successToast, duration: state.defaultDuration }, state);
     return data;
-  } catch (err: any) {
-    // Error: reemplazar loading por error
-    const errorToast = { ...options.error(err), dismissible: true, duration: state.errorDuration };
+  } catch (err: unknown) {
+    const errorObj = err instanceof Error ? err : new Error(String(err));
+    const errorToast = { ...options.error(errorObj), dismissible: true, duration: state.errorDuration };
     updateToast(loadingId, { ...errorToast, duration: state.errorDuration }, state);
     throw err;
   }
 }
 
-/** Estado interno del provider (no exponer totalmente) */
+/** Estado interno del provider */
 export interface ToastState {
   toasts: Toast[];
   maxVisible: number;
