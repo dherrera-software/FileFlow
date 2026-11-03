@@ -54,8 +54,8 @@ app.use('*', async (c, next) => {
       return configuredOrigins[0];
     },
     allowMethods: ['GET', 'POST', 'OPTIONS'],
-    allowHeaders: ['Content-Type', 'Authorization', 'Accept'],
-    exposeHeaders: ['Content-Disposition'],
+    allowHeaders: ['Content-Type', 'Authorization', 'Accept', 'X-Requested-With', 'X-Request-Attempt'],
+    exposeHeaders: ['Content-Disposition', 'Content-Type', 'Content-Length'],
     credentials: true,
     maxAge: 86400,
   });

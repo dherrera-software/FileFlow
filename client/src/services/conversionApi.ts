@@ -34,19 +34,18 @@ async function fetchWithRetry(url: string, options: RequestInit = {}, retries = 
   const timeoutId = setTimeout(() => controller.abort(), Number(import.meta.env.VITE_FETCH_TIMEOUT_GENERAL || 30000));
 
   options.signal = controller.signal;
-  options.headers = { ...options.headers, 'X-Request-Attempt': String(4 - retries) };
 
   try {
     const res = await fetch(url, options);
     clearTimeout(timeoutId);
-    if (!res.ok && retries > 0 && (res.status >= 500 || res.status === 429)) {
+    if (!res.ok && retries > 0 && (res.status === 502 || res.status === 503 || res.status === 504 || res.status === 429)) {
       throw new Error('Retryable');
     }
     return res;
   } catch (err: unknown) {
     clearTimeout(timeoutId);
     const isError = err instanceof Error;
-    if (retries > 0 && (isError && (err.name === 'TypeError' || err.message === 'Retryable'))) {
+    if (retries > 0 && (isError && err.message === 'Retryable')) {
       await new Promise(r => setTimeout(r, delay));
       return fetchWithRetry(url, options, retries - 1, delay * 2);
     }

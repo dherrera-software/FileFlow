@@ -71,7 +71,7 @@ export const I18nProvider = ({
         break;
       }
     }
-    if (typeof value !== 'string') return path;
+    if (typeof value !== 'string') return '';
     if (!vars) return value;
     return Object.entries(vars).reduce(
       (acc, [k, v]) => acc.replace(new RegExp(`\\{${k}\\}`, 'g'), String(v)),
