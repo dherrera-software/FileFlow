@@ -5,11 +5,7 @@ export const BRAND = {
   tagline: 'Tus archivos, en el formato correcto.',
 } as const
 
-export const NAV_LINKS = [
-  { label: 'Inicio', href: '#top', isActive: true },
-  { label: 'Conversiones', href: '#converters', isActive: false },
-  { label: 'Cómo funciona', href: '#how-it-works', isActive: false },
-] as const
+export const APP_VERSION = '1.0.0'
 
 export const HERO = {
   eyebrow: 'Conversor universal de alta fidelidad',
@@ -20,15 +16,15 @@ export const HERO = {
 
 export const HOW_IT_WORKS_STEPS = [
   {
-    title: '1. Arrastra tu archivo',
+    title: 'Arrastra tu archivo',
     body: 'Sube documentos de texto, imágenes o tablas de hasta 25 MB. El sistema detecta el tipo al instante.',
   },
   {
-    title: '2. Elige el formato destino',
+    title: 'Elige el formato destino',
     body: 'Solo se presentan opciones compatibles con el archivo seleccionado; nunca verás una combinación que falle.',
   },
   {
-    title: '3. Convierte y descarga',
+    title: 'Convierte y descarga',
     body: 'El motor especializado procesa la conversión en segundos y la descarga inicia de inmediato en tu navegador.',
   },
 ] as const
@@ -110,7 +106,7 @@ export const FOOTER_COLUMNS = [
     heading: 'Legal y Contacto',
     links: [
       { label: 'Política de privacidad', href: '#privacy' },
-      { label: 'Términos de servicio', href: '#terms' },
+      { label: 'Preguntas frecuentes', href: '#faq' },
       { label: 'hola@fileflow.app', href: 'mailto:hola@fileflow.app' },
     ],
   },

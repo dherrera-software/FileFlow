@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
 import { Wifi, WifiOff, RefreshCw } from 'lucide-react';
-import { cn } from '../utils/cn';
 
 export function NetworkStatusBanner({
   isOnline,
@@ -17,7 +16,9 @@ export function NetworkStatusBanner({
 
   useEffect(() => {
     if (prevDisconnected.current && !isDisconnected) {
+      setShowReconnected(true);
       const timer = setTimeout(() => setShowReconnected(false), 3000);
+      prevDisconnected.current = isDisconnected;
       return () => clearTimeout(timer);
     }
     prevDisconnected.current = isDisconnected;
@@ -29,27 +30,24 @@ export function NetworkStatusBanner({
     <div
       role="status"
       aria-live="polite"
-      className={cn(
-        "fixed top-0 left-0 right-0 z-50 flex items-center justify-center gap-3 px-4 py-2 text-[13px] font-medium shadow-md transition-all",
-        isDisconnected ? "bg-red-600 text-white" : "bg-emerald-600 text-white"
-      )}
+      className="fixed inset-x-0 top-0 z-[70] flex items-center justify-center gap-3 border-b border-line bg-surface/95 px-4 py-2 text-[12.5px] font-medium text-ink shadow-panel backdrop-blur-xl"
     >
       {isDisconnected ? (
         <>
-          <WifiOff className="size-4" />
+          <WifiOff className="size-4 text-danger" aria-hidden="true" />
           <span>Sin conexión o servidor no disponible.</span>
-          <button 
+          <button
             type="button"
             onClick={onRetry}
-            className="ml-2 flex items-center gap-1 rounded-full bg-white/20 px-3 py-1 text-[11px] hover:bg-white/30"
+            className="ml-2 flex items-center gap-1.5 rounded-md border border-danger/30 bg-danger/10 px-2.5 py-1 text-[11px] text-danger transition-colors hover:bg-danger/20"
           >
-            <RefreshCw className="size-3" /> Reintentar ahora
+            <RefreshCw className="size-3" aria-hidden="true" /> Reintentar ahora
           </button>
         </>
       ) : (
         <>
-          <Wifi className="size-4" />
-          <span>Conectado</span>
+          <Wifi className="size-4 text-success" aria-hidden="true" />
+          <span>Conectado de nuevo.</span>
         </>
       )}
     </div>

@@ -23,7 +23,7 @@ outputs/
 *.temp
 
 # Tools & Caches
-.kombai/
+AGENTS.md
 .vite/
 .wrangler/
 .eslintcache
@@ -48,3 +48,7 @@ Thumbs.db
 *.njsproj
 *.sln
 *.sw?
+
+# Archivos de Agentes
+.agents/
+.opencode/

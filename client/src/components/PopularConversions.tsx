@@ -32,28 +32,34 @@ export function PopularConversions({ onSelectPair }: PopularConversionsProps) {
     <section
       id="converters"
       aria-labelledby="converters-heading"
-      className="mx-auto max-w-[1120px] px-4 pb-16 sm:px-6"
+      className="mx-auto max-w-[1180px] scroll-mt-24 px-5 pb-16 sm:px-8"
     >
-      <div className="flex flex-col items-center justify-center text-center gap-1.5 border-t border-line pt-8 dark:border-zinc-800">
-        <h2 id="converters-heading" className="text-[19px] font-semibold tracking-[-0.015em] text-ink">
-          Conversiones populares
-        </h2>
-        <p className="text-[13px] text-ink-subtle">
-          Haz clic en una opción para configurarla directamente en el conversor.
-        </p>
+      <div className="flex flex-col gap-5 border-t border-line pt-10 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="eyebrow">Accesos rápidos</p>
+          <h2
+            id="converters-heading"
+            className="mt-2 text-[28px] font-medium tracking-[-0.03em] text-ink sm:text-[32px]"
+          >
+            Conversiones populares
+          </h2>
+          <p className="mt-2 max-w-[52ch] text-[14px] leading-[1.65] text-ink-muted">
+            Haz clic en una opción para configurarla directamente en el conversor.
+          </p>
+        </div>
 
-        {/* Category Filter Tabs */}
-        <div className="mt-3 flex flex-wrap items-center justify-center gap-1.5">
+        <div className="flex flex-wrap items-center gap-1.5">
           {CATEGORY_TABS.map((cat) => (
             <button
               key={cat}
               type="button"
               onClick={() => setActiveCategory(cat)}
+              aria-pressed={activeCategory === cat}
               className={cn(
-                'rounded-full px-3 py-1 text-[12px] font-medium transition-all',
+                'rounded-md border px-3 py-1 font-mono text-[10px] uppercase tracking-[0.08em] transition-colors',
                 activeCategory === cat
-                  ? 'bg-ink text-surface dark:bg-zinc-100 dark:text-zinc-900 shadow-sm'
-                  : 'bg-surface-sunken text-ink-subtle hover:text-ink hover:bg-line dark:bg-zinc-800/80 dark:text-zinc-400 dark:hover:text-zinc-200',
+                  ? 'border-accent-line bg-accent-soft text-accent'
+                  : 'border-line bg-surface-sunken text-ink-subtle hover:border-line-strong hover:text-ink',
               )}
             >
               {cat}
@@ -62,14 +68,14 @@ export function PopularConversions({ onSelectPair }: PopularConversionsProps) {
         </div>
       </div>
 
-      <ul className="mt-6 flex flex-wrap justify-center gap-2.5">
+      <ul className="mt-7 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {filteredPairs.map((pair) => (
           <ConverterCard key={`${pair.source}-${pair.target}`} pair={pair} onSelect={onSelectPair} />
         ))}
       </ul>
 
-      <p className="mt-5 text-center text-[12px] text-ink-faint">
-        Generado dinámicamente a partir de los {POPULAR_CONVERSIONS.length} accesos rápidos compatibles.
+      <p className="mt-6 text-center font-mono text-[9.5px] uppercase tracking-[0.12em] text-ink-subtle">
+        Generado dinámicamente a partir de los {POPULAR_CONVERSIONS.length} accesos rápidos compatibles
       </p>
     </section>
   )

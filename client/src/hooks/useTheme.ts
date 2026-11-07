@@ -4,15 +4,12 @@ export type Theme = 'light' | 'dark'
 
 const STORAGE_KEY = 'fileflow-theme'
 
+/** FileFlow ships dark by default; the toggle persists the user's choice. */
 function getInitialTheme(): Theme {
-  if (typeof window === 'undefined') return 'light'
+  if (typeof window === 'undefined') return 'dark'
 
   const stored = localStorage.getItem(STORAGE_KEY)
-  if (stored === 'light' || stored === 'dark') {
-    return stored
-  }
-
-  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+  return stored === 'light' ? 'light' : 'dark'
 }
 
 export function useTheme() {
@@ -21,31 +18,13 @@ export function useTheme() {
   useEffect(() => {
     const root = document.documentElement
     const metaThemeColor = document.querySelector('meta[name="theme-color"]')
+    const canvas = theme === 'dark' ? '#08090a' : '#f5f5f1'
 
-    if (theme === 'dark') {
-      root.classList.add('dark')
-      metaThemeColor?.setAttribute('content', '#0c0c0e')
-    } else {
-      root.classList.remove('dark')
-      metaThemeColor?.setAttribute('content', '#ffffff')
-    }
-
+    root.classList.toggle('dark', theme === 'dark')
+    root.style.backgroundColor = canvas
+    metaThemeColor?.setAttribute('content', canvas)
     localStorage.setItem(STORAGE_KEY, theme)
   }, [theme])
-
-  // Listen for OS theme changes if not overridden
-  useEffect(() => {
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
-    const handleChange = (e: MediaQueryListEvent) => {
-      const stored = localStorage.getItem(STORAGE_KEY)
-      if (!stored) {
-        setThemeState(e.matches ? 'dark' : 'light')
-      }
-    }
-
-    mediaQuery.addEventListener('change', handleChange)
-    return () => mediaQuery.removeEventListener('change', handleChange)
-  }, [])
 
   const toggleTheme = useCallback(() => {
     setThemeState((prev) => (prev === 'light' ? 'dark' : 'light'))

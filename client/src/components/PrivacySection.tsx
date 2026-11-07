@@ -34,100 +34,114 @@ export function PrivacySection({ onSelectPair }: PrivacySectionProps = {}) {
   }
 
   const handleTargetClick = (source: FileFormat, target: string) => {
-    if (onSelectPair) {
-      onSelectPair({
-        source,
-        target: target as FileFormat,
-      })
-      const dropzone = document.getElementById('convert')
-      if (dropzone) {
-        dropzone.scrollIntoView({ behavior: 'smooth' })
-      }
+    if (!onSelectPair) return
+
+    onSelectPair({
+      source,
+      target: target as FileFormat,
+    })
+
+    const dropzone = document.getElementById('convert')
+    if (dropzone) {
+      const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      dropzone.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'center' })
     }
   }
 
   return (
-    <section id="privacy" aria-labelledby="privacy-heading" className="mx-auto max-w-[1120px] px-4 py-14 sm:px-6">
-      <div className="rounded-xl border border-line bg-surface p-5 transition-colors sm:flex sm:items-start sm:gap-5 dark:border-zinc-800 dark:bg-zinc-900/60 shadow-xs">
-        <span className="flex size-8 shrink-0 items-center justify-center rounded-full border border-accent-line bg-white text-accent dark:border-accent/40 dark:bg-zinc-800 dark:text-accent">
-          <ShieldCheck className="size-4" aria-hidden="true" />
-        </span>
+    <section id="privacy" aria-labelledby="privacy-heading" className="mx-auto max-w-[1180px] scroll-mt-24 px-5 py-16 sm:px-8">
+      <div className="rounded-2xl border border-line bg-surface p-5 sm:p-7">
+        <div className="flex items-start gap-3.5">
+          <span className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-accent-line bg-accent-soft text-accent">
+            <ShieldCheck className="size-4" aria-hidden="true" />
+          </span>
 
-        <div className="mt-3 w-full sm:mt-0">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
-            <h2 id="privacy-heading" className="text-[14px] font-semibold text-ink">
-              {PRIVACY.heading}
-            </h2>
-            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-accent dark:text-accent-strong">
-              <Sparkles className="size-3" aria-hidden="true" />
-              Haz clic en cualquier formato para ver sus destinos compatibles
-            </span>
-          </div>
-
-          <p className="mt-1.5 max-w-[78ch] text-[13px] leading-[1.7] text-ink-muted">
-            {PRIVACY.body}
-          </p>
-
-          {/* Interactive Conversion Matrix by Category */}
-          <div className="mt-4 space-y-2.5">
-            {ENABLED_CONVERSION_RULES.map((rule) => {
-              const selectedSource = selectedSources[rule.label] || rule.sources[0]
-              const targets = CONVERSION_TARGETS[selectedSource] || []
-
-              return (
-                <div
-                  key={rule.label}
-                  className="rounded-lg border border-line/70 bg-surface-sunken/40 p-2.5 transition-colors hover:border-line dark:border-zinc-800/80 dark:bg-zinc-900/40"
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-col gap-1.5 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <p className="eyebrow">Privacidad</p>
+                <h2
+                  id="privacy-heading"
+                  className="mt-2 text-[22px] font-medium tracking-[-0.02em] text-ink sm:text-[24px]"
                 >
-                  <div className="flex flex-col lg:flex-row lg:items-center gap-2">
-                    {/* Category Label */}
-                    <div className="min-w-[170px] shrink-0 flex items-center justify-between lg:justify-start gap-2">
-                      <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-ink-subtle dark:text-zinc-400">
-                        {rule.label}
-                      </span>
-                      <span className="text-[10px] text-ink-faint bg-surface border border-line/60 rounded px-1.5 py-0.5 dark:bg-zinc-800/60 dark:border-zinc-700/60">
-                        {selectedSource} → {targets.length} opciones
-                      </span>
-                    </div>
+                  {PRIVACY.heading}
+                </h2>
+              </div>
+              <span className="inline-flex items-center gap-1.5 font-mono text-[9.5px] uppercase tracking-[0.1em] text-accent">
+                <Sparkles className="size-3" aria-hidden="true" />
+                Explora los destinos
+              </span>
+            </div>
 
-                    {/* Sources (Clickable format pills) */}
-                    <div className="flex flex-wrap items-center gap-1">
-                      {rule.sources.map((source) => {
-                        const isSelected = source === selectedSource
-                        return (
+            <p className="mt-3 max-w-[78ch] text-[13px] leading-[1.7] text-ink-muted">
+              {PRIVACY.body}
+            </p>
+
+            <div className="mt-6 space-y-2">
+              {ENABLED_CONVERSION_RULES.map((rule) => {
+                const selectedSource = selectedSources[rule.label] || rule.sources[0]
+                const targets = CONVERSION_TARGETS[selectedSource] || []
+
+                return (
+                  <div
+                    key={rule.label}
+                    className="rounded-lg border border-line bg-surface-sunken/50 p-2.5 transition-colors hover:border-line-strong hover:bg-surface-sunken"
+                  >
+                    <div className="flex flex-col gap-2 lg:flex-row lg:items-center">
+                      <div className="flex min-w-[170px] shrink-0 items-center justify-between gap-2 lg:justify-start">
+                        <span className="font-mono text-[10px] font-medium uppercase tracking-[0.12em] text-ink-subtle">
+                          {rule.label}
+                        </span>
+                        <span className="rounded-full border border-line bg-surface px-2 py-0.5 font-mono text-[9px] tabular-nums text-ink-subtle">
+                          {selectedSource} → {targets.length}
+                        </span>
+                      </div>
+
+                      <div
+                        role="group"
+                        aria-label={`Formatos de origen para ${rule.label}`}
+                        className="flex flex-wrap items-center gap-1"
+                      >
+                        {rule.sources.map((source) => {
+                          const isSelected = source === selectedSource
+                          return (
+                            <FormatBadge
+                              key={source}
+                              format={source}
+                              isSelected={isSelected}
+                              onClick={() => handleSelectSource(rule.label, source)}
+                              title={`Seleccionar ${source} para ver sus formatos destino`}
+                              ariaLabel={`Seleccionar ${source} para ver sus formatos destino`}
+                              className={!isSelected ? 'opacity-60 hover:opacity-100' : ''}
+                            />
+                          )
+                        })}
+                      </div>
+
+                      <div className="flex shrink-0 items-center justify-center px-1 text-accent">
+                        <ArrowRight className="size-3.5" aria-hidden="true" />
+                      </div>
+
+                      <div
+                        role="group"
+                        aria-label={`Destinos compatibles desde ${selectedSource}`}
+                        className="flex min-h-[26px] flex-wrap items-center gap-1"
+                      >
+                        {targets.map((target) => (
                           <FormatBadge
-                            key={source}
-                            format={source}
-                            isSelected={isSelected}
-                            onClick={() => handleSelectSource(rule.label, source)}
-                            title={`Seleccionar ${source} para ver sus formatos destino`}
-                            className={!isSelected ? 'opacity-70 hover:opacity-100 hover:scale-105' : ''}
+                            key={`${selectedSource}->${target}`}
+                            format={target}
+                            onClick={() => handleTargetClick(selectedSource, target)}
+                            title={`Convertir de ${selectedSource} a ${target}`}
+                            ariaLabel={`Convertir de ${selectedSource} a ${target}`}
                           />
-                        )
-                      })}
-                    </div>
-
-                    {/* Arrow Divider */}
-                    <div className="flex items-center justify-center shrink-0 px-1 text-accent dark:text-accent-strong">
-                      <ArrowRight className="size-3.5" aria-hidden="true" />
-                    </div>
-
-                    {/* Dynamic Targets based on selectedSource */}
-                    <div className="flex flex-wrap items-center gap-1 min-h-[26px]">
-                      {targets.map((target) => (
-                        <FormatBadge
-                          key={`${selectedSource}->${target}`}
-                          format={target}
-                          onClick={() => handleTargetClick(selectedSource, target)}
-                          title={`Convertir de ${selectedSource} a ${target} (clic para configurar en el conversor)`}
-                          className="cursor-pointer hover:ring-1 hover:ring-accent/50 dark:hover:ring-accent transition-all"
-                        />
-                      ))}
+                        ))}
+                      </div>
                     </div>
                   </div>
-                </div>
-              )
-            })}
+                )
+              })}
+            </div>
           </div>
         </div>
       </div>

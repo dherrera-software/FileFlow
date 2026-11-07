@@ -6,7 +6,7 @@ export function Skeleton({ className, ...props }: React.HTMLAttributes<HTMLDivEl
   return (
     <div
       className={cn(
-        'rounded bg-zinc-200 dark:bg-zinc-700',
+        'rounded bg-surface-sunken ring-1 ring-line',
         !reduce && 'animate-pulse',
         className
       )}
@@ -39,5 +39,5 @@ export function SkeletonChip({ className, ...props }: React.HTMLAttributes<HTMLD
 }
 
 export function SkeletonButton({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
-  return <Skeleton className={cn('rounded-full h-10 w-24', className)} {...props} />;
+  return <Skeleton className={cn('rounded-lg h-10 w-24', className)} {...props} />;
 }

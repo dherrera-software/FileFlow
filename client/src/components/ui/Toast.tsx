@@ -10,11 +10,11 @@ interface ToastProps {
 }
 
 const iconMap: Record<ToastType, { Component: React.ComponentType<{ className?: string; 'aria-hidden'?: boolean | 'true' | 'false' }>; alt: string; className?: string }> = {
-  success: { Component: CheckCircle2, alt: 'Conversión completada', className: 'text-emerald-500' },
-  error: { Component: CircleAlert, alt: 'Error', className: 'text-red-500' },
+  success: { Component: CheckCircle2, alt: 'Conversión completada', className: 'text-success' },
+  error: { Component: CircleAlert, alt: 'Error', className: 'text-danger' },
   warning: { Component: AlertTriangle, alt: 'Advertencia', className: 'text-amber-500' },
-  info: { Component: Info, alt: 'Información', className: 'text-sky-500' },
-  loading: { Component: Loader2, alt: 'Cargando', className: 'text-violet-500 animate-spin' },
+  info: { Component: Info, alt: 'Información', className: 'text-info' },
+  loading: { Component: Loader2, alt: 'Cargando', className: 'text-accent animate-spin' },
 };
 
 export function Toast({ toast, onDismiss }: ToastProps) {
@@ -27,7 +27,7 @@ export function Toast({ toast, onDismiss }: ToastProps) {
       aria-live={toast.type === 'error' ? 'assertive' : 'polite'}
       aria-atomic="true"
       className={cn(
-        'flex items-center gap-3 p-3.5 rounded-xl shadow-lg max-w-sm w-full bg-white dark:bg-zinc-900 border border-line dark:border-zinc-800',
+        'relative flex items-center gap-3 p-3.5 rounded-xl max-w-sm w-full overflow-hidden border border-line bg-surface-raised shadow-panel',
         reduce && 'animate-none',
         'transition-colors duration-300 pointer-events-auto'
       )}
@@ -46,7 +46,7 @@ export function Toast({ toast, onDismiss }: ToastProps) {
         <button
           type="button"
           onClick={() => toast.action?.onClick()}
-          className="shrink-0 rounded-md px-2 py-1 text-[11px] font-medium text-accent hover:bg-zinc-100 dark:hover:bg-zinc-800 mr-1"
+          className="mr-1 shrink-0 rounded-md px-2 py-1 text-[11px] font-medium text-accent hover:bg-surface-sunken"
         >
           {toast.action.label}
         </button>
@@ -62,9 +62,9 @@ export function Toast({ toast, onDismiss }: ToastProps) {
         </button>
       )}
       {(toast.duration ?? 0) > 0 && !reduce && (
-        <div className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full bg-zinc-200 dark:bg-zinc-800 overflow-hidden">
+        <div className="absolute bottom-0 left-0 right-0 h-0.5 overflow-hidden rounded-full bg-surface-sunken">
           <div
-            className="h-full rounded-full bg-accent transition-[width] duration-[linear]"
+            className="h-full rounded-full bg-accent transition-[width] duration-300 ease-linear"
             style={{ width: '100%' }}
           />
         </div>

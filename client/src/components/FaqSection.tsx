@@ -1,23 +1,34 @@
+import { Plus } from 'lucide-react'
 import { FAQ_ITEMS } from '../utils/content'
 
 export function FaqSection() {
   return (
-    <section aria-labelledby="faq-heading" className="border-y border-line bg-surface transition-colors dark:border-zinc-800 dark:bg-zinc-900/40">
-      <div className="mx-auto max-w-[1120px] px-4 py-14 sm:px-6">
-        <h2 id="faq-heading" className="text-[19px] font-semibold tracking-[-0.015em] text-ink">
+    <section id="faq" aria-labelledby="faq-heading" className="scroll-mt-24 border-y border-line bg-surface">
+      <div className="mx-auto max-w-[1180px] px-5 py-16 sm:px-8">
+        <p className="eyebrow">Dudas frecuentes</p>
+        <h2
+          id="faq-heading"
+          className="mt-2 text-[28px] font-medium tracking-[-0.03em] text-ink sm:text-[32px]"
+        >
           Preguntas frecuentes
         </h2>
 
-        <dl className="mt-4 grid grid-cols-1 gap-x-10 gap-y-6 sm:grid-cols-2">
+        <div className="mt-8 grid grid-cols-1 gap-x-12 sm:grid-cols-2">
           {FAQ_ITEMS.filter((item) => item.enabled).map((item) => (
-            <div key={item.question} className="border-t border-ink/10 pt-4 dark:border-zinc-800">
-              <dt className="text-[13.5px] font-medium text-ink">{item.question}</dt>
-              <dd className="mt-1.5 max-w-[46ch] text-[12.5px] leading-[1.7] text-ink-muted">
+            <details key={item.question} className="group border-t border-line py-4">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-[13.5px] font-medium text-ink [&::-webkit-details-marker]:hidden">
+                {item.question}
+                <Plus
+                  className="size-4 shrink-0 text-ink-subtle transition-[transform,color] duration-200 group-open:rotate-45 group-open:text-accent"
+                  aria-hidden="true"
+                />
+              </summary>
+              <p className="mt-2.5 max-w-[52ch] text-[13px] leading-[1.65] text-ink-muted">
                 {item.answer}
-              </dd>
-            </div>
+              </p>
+            </details>
           ))}
-        </dl>
+        </div>
       </div>
     </section>
   )

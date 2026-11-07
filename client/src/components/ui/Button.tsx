@@ -5,23 +5,15 @@ export type ButtonVariant = 'primary' | 'secondary' | 'dark' | 'ghost'
 export type ButtonSize = 'sm' | 'md' | 'lg'
 
 const BASE =
-  'inline-flex items-center justify-center gap-2 rounded-full font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-45'
-
-const HOVER_ACTIVE =
-  'transition-colors hover:border-accent-strong hover:bg-accent-active dark:hover:border-accent-strong dark:hover:bg-accent-soft'
-
-const ACTIVE = 'active:scale-[0.98] active:bg-accent-active'
+  'inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-[color,background-color,border-color,box-shadow,transform] duration-150 disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98]'
 
 const VARIANTS: Record<ButtonVariant, string> = {
   primary:
-    'border border-accent bg-accent text-white shadow-primary ' +
-    HOVER_ACTIVE + ' ' + ACTIVE +
-    ' data-[state=open]:bg-accent-soft',
+    'border border-accent-fill bg-accent-fill text-accent-on shadow-primary hover:brightness-105',
   secondary:
-    'border border-line bg-white text-ink hover:border-accent hover:text-accent-ink dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:border-accent dark:hover:text-accent-ink',
-  dark:
-    'border border-ink bg-ink text-white hover:border-[#27272a] hover:bg-[#27272a] dark:border-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white',
-  ghost: 'text-ink-subtle hover:text-accent-ink dark:text-zinc-400 dark:hover:text-accent-ink',
+    'border border-line bg-surface-raised text-ink hover:border-line-strong hover:bg-surface-sunken',
+  dark: 'border border-ink bg-ink text-canvas hover:opacity-90',
+  ghost: 'text-ink-subtle hover:bg-surface-sunken hover:text-ink',
 }
 
 const SIZES: Record<ButtonSize, string> = {

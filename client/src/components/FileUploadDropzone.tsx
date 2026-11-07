@@ -6,9 +6,9 @@ import { useFilePreview } from '../hooks/useFilePreview'
 import { FilePreviewPanel } from './FilePreviewPanel'
 import {
   ACCEPTED_EXTENSIONS,
+  FORMAT_CATEGORY_MAP,
   FORMAT_DESCRIPTIONS,
   SUPPORTED_FORMATS,
-  FORMAT_CATEGORY_MAP,
   formatFileSize,
 } from '../utils/formats'
 import type { FormatCategory } from '../utils/formats'
@@ -28,6 +28,23 @@ const CATEGORY_CHIPS: ('Todos' | FormatCategory)[] = [
   ),
 ]
 
+const CATEGORY_DOT: Record<FormatCategory, string> = {
+  Documentos: 'bg-accent',
+  Imágenes: 'bg-amber-400',
+  'Hojas de cálculo': 'bg-sky-400',
+  Presentaciones: 'bg-orange-400',
+  Audio: 'bg-fuchsia-400',
+  Video: 'bg-rose-400',
+}
+
+type StatusTone = 'muted' | 'accent' | 'danger'
+
+const STATUS_STYLES: Record<StatusTone, { pill: string; dot: string }> = {
+  muted: { pill: 'border-line bg-surface-raised text-ink-subtle', dot: 'bg-ink-faint' },
+  accent: { pill: 'border-accent-line bg-accent-soft text-accent', dot: 'bg-accent' },
+  danger: { pill: 'border-danger/40 bg-danger/10 text-danger', dot: 'bg-danger' },
+}
+
 export function FileUploadDropzone({ controller }: { controller: ConverterController }) {
   const { file, format, error, isDragging, notice, pendingPair, actions, inputRef, limitsReady, limits } = controller
   const selected = file && format ? { file, format } : null
@@ -41,14 +58,20 @@ export function FileUploadDropzone({ controller }: { controller: ConverterContro
       ? SUPPORTED_FORMATS
       : SUPPORTED_FORMATS.filter((f) => FORMAT_CATEGORY_MAP[f] === activeCategory)
 
+  const status: { label: string; tone: StatusTone } = controller.isConverting
+    ? { label: 'Convirtiendo', tone: 'accent' }
+    : error
+      ? { label: 'Revisar archivo', tone: 'danger' }
+      : selected
+        ? { label: 'Archivo cargado', tone: 'accent' }
+        : isDragging
+          ? { label: 'Suelta para cargar', tone: 'accent' }
+          : { label: 'Listo', tone: 'muted' }
+
   const handleKeyActivate = () => actions.openFilePicker()
 
   return (
     <section id="convert" aria-labelledby="convert-heading" className="scroll-mt-24">
-      <h2 id="convert-heading" className="sr-only">
-        {t('common.convertFile') || 'Convertir un archivo'}
-      </h2>
-
       <label htmlFor="file-input" className="sr-only">
         {t('dropzone.selectFile') || 'Elige un archivo para convertir'}
       </label>
@@ -62,188 +85,226 @@ export function FileUploadDropzone({ controller }: { controller: ConverterContro
         className="sr-only"
       />
 
-      <div
-        onDragEnter={actions.onDragEnter}
-        onDragOver={actions.onDragOver}
-        onDragLeave={actions.onDragLeave}
-        onDrop={actions.onDrop}
-      >
-        <div aria-live="polite" className="sr-only" id="drop-announcer" />
-        {selected ? (
-          <div ref={previewRef} className="rounded-[10px] border border-line bg-white transition-colors dark:border-zinc-800 dark:bg-zinc-900">
-            <div className="flex items-start gap-3 px-4 pb-3.5 pt-4 text-left sm:px-5">
-              <FormatBadge format={selected.format} size="sm" className="mt-[3px] shrink-0" />
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-[13.5px] font-medium">{selected.file.name}</p>
-                <p className="mt-0.5 text-[11.5px] text-ink-subtle">
-                  {formatFileSize(selected.file.size)}
-                  <span aria-hidden="true"> · </span>
-                  {FORMAT_DESCRIPTIONS[selected.format]}
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={actions.removeFile}
-                aria-label={t('dropzone.removeFile', { fileName: selected.file.name }) || `Eliminar ${selected.file.name}`}
-                className="shrink-0 rounded-full p-1 text-ink-subtle transition-colors hover:bg-surface-sunken hover:text-ink dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
-              >
-                <X className="size-3.5" aria-hidden="true" />
-              </button>
-            </div>
-
-            <FilePreviewPanel
-              preview={preview}
-              fileName={selected.file.name}
-              fileSize={selected.file.size}
-              format={selected.format}
-              className="mx-3 mt-3 mb-0 rounded-lg"
-            />
-
-            <ConversionOptions controller={controller} />
-
-            {controller.conversionError && (
-              <div
-                role="alert"
-                className="mx-4 mb-4 flex flex-col gap-2.5 rounded-lg border border-red-200 bg-red-50/70 px-3.5 py-3 text-left dark:border-red-900/50 dark:bg-red-950/30"
-              >
-                <div className="flex items-start gap-2.5">
-                  <CircleAlert className="mt-0.5 size-4 shrink-0 text-red-600 dark:text-red-400" aria-hidden="true" />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[12.5px] font-medium text-red-900 dark:text-red-200">
-                      {t('errors.conversionFailed') || 'Error en la conversión'}
-                    </p>
-                    <p className="mt-0.5 text-[12px] leading-relaxed text-red-800/90 dark:text-red-300/90">
-                      {controller.conversionError.message}
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={actions.dismissConversionError}
-                    aria-label="Cerrar aviso de error"
-                    className="shrink-0 rounded-full p-1 text-red-700/60 transition-colors hover:bg-red-100 hover:text-red-900 dark:text-red-300/90 dark:hover:bg-red-900/40 dark:hover:text-red-100"
-                  >
-                    <X className="size-3.5" aria-hidden="true" />
-                  </button>
-                </div>
-                {controller.conversionError.retryable && (
-                  <div className="flex justify-end">
-                    <Button variant="secondary" size="sm" onClick={actions.convert}>
-                      {t('common.retry') || 'Reintentar'}
-                    </Button>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {notice && <ConversionNotice onDismiss={actions.dismissNotice} />}
-          </div>
-        ) : error ? (
-          <div
-            role="alert"
-            className="rounded-2xl border border-dashed border-red-200 bg-red-50/50 px-5 py-7 text-center dark:border-red-900/50 dark:bg-red-950/30"
-          >
-            <CircleAlert className="mx-auto size-5 text-red-600 dark:text-red-400" aria-hidden="true" />
-            <p className="mt-2.5 text-[14px] font-medium text-red-900 dark:text-red-200">
-              {t('errors.fileConversionFailed') || 'No se puede convertir este archivo'}
+      <div className="overflow-hidden rounded-2xl border border-line bg-surface">
+        <header className="flex items-center justify-between gap-3 border-b border-line px-4 py-3.5 sm:px-5">
+          <div className="min-w-0">
+            <p className="font-mono text-[9px] uppercase tracking-[0.16em] text-ink-faint">
+              Archivo
             </p>
-            <p className="mt-1 truncate text-[12.5px] font-medium text-red-900/80 dark:text-red-300/80">{error.fileName}</p>
-            <p className="mx-auto mt-1 max-w-[46ch] text-[12px] leading-[1.6] text-red-800/80 dark:text-red-300/70">
-              {error.message}
-            </p>
-            <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
-              <Button variant="secondary" size="sm" onClick={actions.openFilePicker}>
-                {t('common.chooseAnotherFile') || 'Elegir otro archivo'}
-              </Button>
-              <Button variant="ghost" size="sm" onClick={actions.dismissError}>
-                {t('common.dismiss') || 'Descartar'}
-              </Button>
-            </div>
+            <h2
+              id="convert-heading"
+              className="mt-0.5 truncate text-[15px] font-medium tracking-[-0.01em] text-ink"
+            >
+              {t('common.convertFile') || 'Convertir un archivo'}
+            </h2>
           </div>
-        ) : (
-          <div
-            role="region"
-            aria-label={t('dropzone.dropzoneLabel') || 'Zona para arrastrar y soltar archivos'}
-            aria-describedby="drop-instructions supported-formats"
-            tabIndex={0}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault()
-                handleKeyActivate()
-              }
-            }}
+          <span
             className={cn(
-              'flex flex-col items-center rounded-3xl border px-6 py-9 text-center transition-all duration-normal ease-out-expo sm:px-8 sm:py-10',
-              isDragging
-                ? 'border-accent bg-accent-soft'
-                : 'border-line bg-white dark:border-zinc-800 dark:bg-zinc-900',
+              'inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 font-mono text-[9px] uppercase tracking-[0.12em]',
+              STATUS_STYLES[status.tone].pill,
             )}
           >
-            <span className="inline-block text-accent">
-              {isDragging ? (
-                <Download className="size-6 animate-bounce-subtle" aria-hidden="true" />
-              ) : (
-                <FileUp className="size-6" aria-hidden="true" />
-              )}
-            </span>
+            <span className={cn('size-1.5 rounded-full', STATUS_STYLES[status.tone].dot)} aria-hidden="true" />
+            {status.label}
+          </span>
+        </header>
 
-            <p className="mt-4 text-[15.5px] font-medium">
-              {isDragging ? (t('dropzone.dragDrop') || 'Suelta el archivo para seleccionarlo') : (t('dropzone.dropHere') || 'Arrastra un archivo aquí')}
-            </p>
-            <p
-              id="drop-instructions"
+        <div
+          className="p-3 sm:p-4"
+          onDragEnter={actions.onDragEnter}
+          onDragOver={actions.onDragOver}
+          onDragLeave={actions.onDragLeave}
+          onDrop={actions.onDrop}
+        >
+          <div aria-live="polite" className="sr-only" id="drop-announcer" />
+          {selected ? (
+            <div ref={previewRef} className="overflow-hidden rounded-xl border border-line bg-surface-raised">
+              <div className="flex items-start gap-3 border-b border-line px-4 py-3.5 text-left">
+                <FormatBadge format={selected.format} size="sm" className="mt-0.5 shrink-0" />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-[13.5px] font-medium text-ink">{selected.file.name}</p>
+                  <p className="mt-0.5 text-[11.5px] tabular-nums text-ink-subtle">
+                    {formatFileSize(selected.file.size)}
+                    <span aria-hidden="true"> · </span>
+                    {FORMAT_DESCRIPTIONS[selected.format]}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={actions.removeFile}
+                  aria-label={t('dropzone.removeFile', { fileName: selected.file.name }) || `Eliminar ${selected.file.name}`}
+                  className="shrink-0 rounded-md p-1 text-ink-subtle transition-colors hover:bg-surface-sunken hover:text-ink"
+                >
+                  <X className="size-3.5" aria-hidden="true" />
+                </button>
+              </div>
+
+              <FilePreviewPanel
+                preview={preview}
+                fileName={selected.file.name}
+                fileSize={selected.file.size}
+                format={selected.format}
+                className="mx-3 mt-3 mb-0"
+              />
+
+              <ConversionOptions controller={controller} />
+
+              {controller.conversionError && (
+                <div
+                  role="alert"
+                  className="mx-4 mb-4 flex flex-col gap-2.5 rounded-lg border border-danger/40 bg-danger/10 px-3.5 py-3 text-left"
+                >
+                  <div className="flex items-start gap-2.5">
+                    <CircleAlert className="mt-0.5 size-4 shrink-0 text-danger" aria-hidden="true" />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[12.5px] font-medium text-danger">
+                        {t('errors.conversionFailed') || 'Error en la conversión'}
+                      </p>
+                      <p className="mt-0.5 text-[12px] leading-relaxed text-ink-muted">
+                        {controller.conversionError.message}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={actions.dismissConversionError}
+                      aria-label="Cerrar aviso de error"
+                      className="shrink-0 rounded-md p-1 text-ink-subtle transition-colors hover:bg-surface-sunken hover:text-ink"
+                    >
+                      <X className="size-3.5" aria-hidden="true" />
+                    </button>
+                  </div>
+                  {controller.conversionError.retryable && (
+                    <div className="flex justify-end">
+                      <Button variant="secondary" size="sm" onClick={actions.convert}>
+                        {t('common.retry') || 'Reintentar'}
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {notice && <ConversionNotice onDismiss={actions.dismissNotice} />}
+            </div>
+          ) : error ? (
+            <div
+              role="alert"
+              className="rounded-xl border border-dashed border-danger/40 bg-danger/5 px-5 py-7 text-center"
+            >
+              <CircleAlert className="mx-auto size-5 text-danger" aria-hidden="true" />
+              <p className="mt-2.5 text-[14px] font-medium text-ink">
+                {t('errors.fileConversionFailed') || 'No se puede convertir este archivo'}
+              </p>
+              <p className="mt-1 truncate text-[12.5px] font-medium text-ink-muted">{error.fileName}</p>
+              <p className="mx-auto mt-1 max-w-[46ch] text-[12px] leading-[1.6] text-ink-subtle">
+                {error.message}
+              </p>
+              <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+                <Button variant="secondary" size="sm" onClick={actions.openFilePicker}>
+                  {t('common.chooseAnotherFile') || 'Elegir otro archivo'}
+                </Button>
+                <Button variant="ghost" size="sm" onClick={actions.dismissError}>
+                  {t('common.dismiss') || 'Descartar'}
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div
+              role="region"
+              aria-label={t('dropzone.dropzoneLabel') || 'Zona para arrastrar y soltar archivos'}
+              aria-describedby="drop-instructions supported-formats"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.target !== e.currentTarget) return
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault()
+                  handleKeyActivate()
+                }
+              }}
               className={cn(
-                'mt-1.5 max-w-[40ch] text-[13px] leading-[1.55]',
-                isDragging ? 'text-accent-strong dark:text-accent' : 'text-ink-subtle',
+                'flex flex-col items-center rounded-xl border border-dashed px-5 py-8 text-center transition-[background-color,border-color] duration-200 sm:px-7 sm:py-10',
+                isDragging
+                  ? 'border-accent bg-accent-soft'
+                  : 'border-line-strong bg-surface-raised/60 hover:border-line-strong',
               )}
             >
-              {isDragging
-                ? (t('dropzone.dropToCheck') || 'Suelta para verificar el formato y ver las opciones de conversión.')
-                : (t('dropzone.dropSupports', { formats: 'documentos de texto, imágenes y hojas de cálculo/datos' }) ||
-                  'o elígelo desde tu dispositivo — soporta documentos de texto, imágenes y hojas de cálculo/datos.')}
+              <span
+                className={cn(
+                  'flex size-11 items-center justify-center rounded-xl border transition-colors',
+                  isDragging
+                    ? 'border-accent-line bg-accent-soft text-accent'
+                    : 'border-line bg-surface text-accent',
+                )}
+              >
+                {isDragging ? (
+                  <Download className="size-5 animate-drop-bob" aria-hidden="true" />
+                ) : (
+                  <FileUp className="size-5" aria-hidden="true" />
+                )}
+              </span>
+
+              <p className="mt-4 text-[16px] font-medium tracking-[-0.01em] text-ink">
+                {isDragging
+                  ? (t('dropzone.dragDrop') || 'Suelta el archivo para seleccionarlo')
+                  : (t('dropzone.dropHere') || 'Arrastra un archivo aquí')}
+              </p>
+              <p
+                id="drop-instructions"
+                className={cn(
+                  'mt-1.5 max-w-[42ch] text-[13px] leading-[1.6]',
+                  isDragging ? 'text-accent' : 'text-ink-subtle',
+                )}
+              >
+                {isDragging
+                  ? (t('dropzone.dropToCheck') || 'Suelta para verificar el formato y ver las opciones de conversión.')
+                  : (t('dropzone.dropSupports', { formats: 'documentos de texto, imágenes y hojas de cálculo/datos' }) ||
+                    'o elígelo desde tu dispositivo — soporta documentos de texto, imágenes y hojas de cálculo/datos.')}
+              </p>
+
+              {!limitsReady && (
+                <p className="mt-4 text-[13px] text-ink-subtle">{t('common.loading') || 'Cargando'}…</p>
+              )}
+              <Button
+                className="mt-5 w-full sm:w-auto"
+                size="lg"
+                onClick={actions.openFilePicker}
+                disabled={!limitsReady}
+                aria-describedby={SUPPORTED_FORMATS_ID}
+              >
+                {t('common.selectFile') || 'Seleccionar archivo'}
+              </Button>
+
+              {pendingPair && (
+                <PendingConversionHint source={pendingPair.source} target={pendingPair.target} />
+              )}
+            </div>
+          )}
+        </div>
+
+        <div id={SUPPORTED_FORMATS_ID} className="border-t border-line px-4 pb-4 pt-3.5 text-center">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="font-mono text-[9px] uppercase tracking-[0.16em] text-ink-subtle">Formatos</p>
+            <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-ink-subtle">
+              hasta {limits?.maxFileSizeMB ?? 25} MB
             </p>
-
-            {!limitsReady && (
-              <p className="mt-4 text-[13px] text-ink-subtle">{t('common.loading') || 'Cargando'}…</p>
-            )}
-            <Button
-              className="mt-5"
-              size="lg"
-              onClick={actions.openFilePicker}
-              disabled={!limitsReady}
-              aria-describedby={SUPPORTED_FORMATS_ID}
-            >
-              {t('common.selectFile') || 'Seleccionar archivo'}
-            </Button>
-
-            {pendingPair && (
-              <PendingConversionHint source={pendingPair.source} target={pendingPair.target} />
-            )}
           </div>
-        )}
 
-        <div id={SUPPORTED_FORMATS_ID} className="px-4 pb-3 pt-4 text-center">
-          {/* Category Chips for Format Discovery */}
-          <div role="tablist" aria-label={t('dropzone.formatCategories') || 'Categorías de formato'} className="flex flex-wrap items-center justify-center gap-1.5 mb-2.5">
-            {CATEGORY_CHIPS.map((cat, idx) => (
+          {/* Category filters: a plain button group, not a tablist. */}
+          <div
+            role="group"
+            aria-label={t('dropzone.formatCategories') || 'Categorías de formato'}
+            className="mt-2 flex flex-wrap items-center justify-center gap-1.5"
+          >
+            {CATEGORY_CHIPS.map((cat) => (
               <button
                 key={cat}
-                role="tab"
-                aria-selected={activeCategory === cat}
-                tabIndex={activeCategory === cat ? 0 : -1}
-                onKeyDown={(e) => {
-                  const items = CATEGORY_CHIPS.length
-                  let newIndex = idx
-                  if (e.key === 'ArrowRight') { newIndex = (idx + 1) % items }
-                  if (e.key === 'ArrowLeft') { newIndex = (idx - 1 + items) % items }
-                  if (newIndex !== idx) { setActiveCategory(CATEGORY_CHIPS[newIndex]) }
-                }}
                 type="button"
                 onClick={() => setActiveCategory(cat)}
+                aria-pressed={activeCategory === cat}
                 className={cn(
-                  'rounded-full px-2.5 py-0.5 text-[11px] font-medium transition-colors',
+                  'rounded-md border px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.08em] transition-colors',
                   activeCategory === cat
-                    ? 'bg-zinc-800 text-white dark:bg-zinc-200 dark:text-zinc-900'
-                    : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700',
+                    ? 'border-accent-line bg-accent-soft text-accent'
+                    : 'border-line bg-surface-sunken text-ink-subtle hover:border-line-strong hover:text-ink',
                 )}
               >
                 {cat}
@@ -251,14 +312,22 @@ export function FileUploadDropzone({ controller }: { controller: ConverterContro
             ))}
           </div>
 
-          <ul role="list" className="flex flex-wrap items-center justify-center gap-1.5 max-h-[140px] overflow-y-auto py-1">
-            <li className="mr-1 text-[11.5px] text-ink-subtle">{t('dropzone.accepts') || 'Acepta'}</li>
-            {displayedFormats.map((supported) => (
-              <li key={supported}><FormatBadge format={supported} /></li>
-            ))}
-            <li className="ml-1 text-[11.5px] text-ink-faint">
-              {t('dropzone.maxSize', { maxMB: limits?.maxFileSizeMB ?? 25 }) || `hasta ${limits?.maxFileSizeMB ?? 25} MB`}
+          <ul
+            role="list"
+            className="mt-2.5 flex max-h-[140px] flex-wrap content-start items-center justify-center gap-1.5 overflow-y-auto py-0.5"
+          >
+            <li className="mr-0.5 font-mono text-[9.5px] uppercase tracking-[0.12em] text-ink-subtle">
+              {t('dropzone.accepts') || 'Acepta'}
             </li>
+            {displayedFormats.map((supported) => (
+              <li key={supported} className="inline-flex items-center gap-1">
+                <span
+                  className={cn('size-1.5 rounded-full', CATEGORY_DOT[FORMAT_CATEGORY_MAP[supported]])}
+                  aria-hidden="true"
+                />
+                <FormatBadge format={supported} />
+              </li>
+            ))}
           </ul>
         </div>
       </div>
