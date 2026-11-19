@@ -221,15 +221,13 @@ export function FileUploadDropzone({ controller }: { controller: ConverterContro
                 }
               }}
               className={cn(
-                'flex flex-col items-center rounded-xl border border-dashed px-5 py-8 text-center transition-[background-color,border-color] duration-200 sm:px-7 sm:py-10',
-                isDragging
-                  ? 'border-accent bg-accent-soft'
-                  : 'border-line-strong bg-surface-raised/60 hover:border-line-strong',
+                'dropzone-panel flex flex-col items-center px-5 py-8 text-center sm:px-7 sm:py-10',
+                isDragging && 'is-dragging',
               )}
             >
               <span
                 className={cn(
-                  'flex size-11 items-center justify-center rounded-xl border transition-colors',
+                  'dropzone-icon flex size-11 items-center justify-center rounded-full border transition-colors',
                   isDragging
                     ? 'border-accent-line bg-accent-soft text-accent'
                     : 'border-line bg-surface text-accent',
@@ -301,7 +299,7 @@ export function FileUploadDropzone({ controller }: { controller: ConverterContro
                 onClick={() => setActiveCategory(cat)}
                 aria-pressed={activeCategory === cat}
                 className={cn(
-                  'rounded-md border px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.08em] transition-colors',
+                  'rounded-full border px-3 py-1 font-mono text-[10px] uppercase tracking-[0.08em] transition-colors',
                   activeCategory === cat
                     ? 'border-accent-line bg-accent-soft text-accent'
                     : 'border-line bg-surface-sunken text-ink-subtle hover:border-line-strong hover:text-ink',

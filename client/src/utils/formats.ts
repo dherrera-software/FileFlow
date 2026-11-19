@@ -200,61 +200,62 @@ export const FORMAT_DESCRIPTIONS: Record<FileFormat, string> = {
 }
 
 /**
- * Semantic badge styles. Pastel fill, rich text, one coordinated hue per format family.
+ * Maps every format to the FileFlow Desktop badge category. Colour rules live
+ * in `index.css` under `.format-badge[data-cat="…"]` (light and dark palettes).
  */
-export const FORMAT_BADGE_STYLES: Record<FileFormat, string> = {
+export const FORMAT_BADGE_CATEGORY: Record<FileFormat, string> = {
   // Documentos
-  DOCX: 'bg-blue-50 text-blue-700 dark:bg-blue-950/70 dark:text-blue-300',
-  DOC: 'bg-blue-50 text-blue-700 dark:bg-blue-950/70 dark:text-blue-300',
-  PDF: 'bg-red-50 text-red-700 dark:bg-red-950/70 dark:text-red-300',
-  TXT: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
-  RTF: 'bg-sky-50 text-sky-700 dark:bg-sky-950/70 dark:text-sky-300',
-  HTML: 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/70 dark:text-indigo-300',
-  ODT: 'bg-cyan-50 text-cyan-700 dark:bg-cyan-950/70 dark:text-cyan-300',
-  EPUB: 'bg-purple-50 text-purple-700 dark:bg-purple-950/70 dark:text-purple-300',
-  MD: 'bg-neutral-100 text-neutral-800 dark:bg-neutral-800 dark:text-neutral-200',
-  'PDF/A': 'bg-rose-50 text-rose-800 dark:bg-rose-950/70 dark:text-rose-300',
+  DOCX: 'docx',
+  DOC: 'doc',
+  PDF: 'pdf',
+  TXT: 'neutral',
+  RTF: 'neutral',
+  HTML: 'html',
+  ODT: 'odt',
+  EPUB: 'epub',
+  MD: 'neutral',
+  'PDF/A': 'pdf',
 
   // Imágenes
-  JPG: 'bg-amber-50 text-amber-700 dark:bg-amber-950/70 dark:text-amber-300',
-  JPEG: 'bg-amber-50 text-amber-700 dark:bg-amber-950/70 dark:text-amber-300',
-  PNG: 'bg-teal-50 text-teal-700 dark:bg-teal-950/70 dark:text-teal-300',
-  WEBP: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/70 dark:text-emerald-300',
-  HEIC: 'bg-sky-50 text-sky-700 dark:bg-sky-950/70 dark:text-sky-300',
-  GIF: 'bg-fuchsia-50 text-fuchsia-700 dark:bg-fuchsia-950/70 dark:text-fuchsia-300',
-  BMP: 'bg-stone-100 text-stone-700 dark:bg-stone-800 dark:text-stone-300',
-  TIFF: 'bg-cyan-50 text-cyan-800 dark:bg-cyan-950/70 dark:text-cyan-300',
-  SVG: 'bg-violet-50 text-violet-700 dark:bg-violet-950/70 dark:text-violet-300',
+  JPG: 'jpg',
+  JPEG: 'jpg',
+  PNG: 'png',
+  WEBP: 'webp',
+  HEIC: 'heic',
+  GIF: 'gif',
+  BMP: 'bmp',
+  TIFF: 'tiff',
+  SVG: 'svg',
 
   // Hojas de cálculo y datos
-  XLSX: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/70 dark:text-emerald-300',
-  XLS: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/70 dark:text-emerald-300',
-  CSV: 'bg-lime-50 text-lime-700 dark:bg-lime-950/70 dark:text-lime-300',
-  TSV: 'bg-lime-50 text-lime-700 dark:bg-lime-950/70 dark:text-lime-300',
-  ODS: 'bg-green-50 text-green-700 dark:bg-green-950/70 dark:text-green-300',
-  JSON: 'bg-yellow-50 text-yellow-800 dark:bg-yellow-950/70 dark:text-yellow-300',
-  XML: 'bg-orange-50 text-orange-800 dark:bg-orange-950/70 dark:text-orange-300',
+  XLSX: 'xlsx',
+  XLS: 'xls',
+  CSV: 'csv',
+  TSV: 'tsv',
+  ODS: 'ods',
+  JSON: 'json',
+  XML: 'xml',
 
   // Presentaciones
-  PPTX: 'bg-orange-50 text-orange-700 dark:bg-orange-950/70 dark:text-orange-300',
-  PPT: 'bg-orange-50 text-orange-700 dark:bg-orange-950/70 dark:text-orange-300',
-  ODP: 'bg-amber-50 text-amber-800 dark:bg-amber-950/70 dark:text-amber-300',
+  PPTX: 'pptx',
+  PPT: 'ppt',
+  ODP: 'odp',
 
   // Audio
-  WAV: 'bg-violet-50 text-violet-700 dark:bg-violet-950/70 dark:text-violet-300',
-  MP3: 'bg-fuchsia-50 text-fuchsia-700 dark:bg-fuchsia-950/70 dark:text-fuchsia-300',
-  FLAC: 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/70 dark:text-indigo-300',
-  M4A: 'bg-pink-50 text-pink-700 dark:bg-pink-950/70 dark:text-pink-300',
-  AAC: 'bg-pink-50 text-pink-700 dark:bg-pink-950/70 dark:text-pink-300',
-  OGG: 'bg-teal-50 text-teal-800 dark:bg-teal-950/70 dark:text-teal-300',
-  OPUS: 'bg-cyan-50 text-cyan-800 dark:bg-cyan-950/70 dark:text-cyan-300',
+  WAV: 'wav',
+  MP3: 'mp3',
+  FLAC: 'flac',
+  M4A: 'm4a',
+  AAC: 'aac',
+  OGG: 'ogg',
+  OPUS: 'opus',
 
   // Video
-  MP4: 'bg-rose-50 text-rose-700 dark:bg-rose-950/70 dark:text-rose-300',
-  MOV: 'bg-blue-50 text-blue-800 dark:bg-blue-950/70 dark:text-blue-300',
-  AVI: 'bg-red-50 text-red-800 dark:bg-red-950/70 dark:text-red-300',
-  MKV: 'bg-purple-50 text-purple-800 dark:bg-purple-950/70 dark:text-purple-300',
-  WEBM: 'bg-emerald-50 text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-300',
+  MP4: 'mp4',
+  MOV: 'mov',
+  AVI: 'avi',
+  MKV: 'mkv',
+  WEBM: 'webm',
 }
 
 export const EXTENSION_TO_FORMAT: Record<string, FileFormat> = {

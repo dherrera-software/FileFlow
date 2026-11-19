@@ -1,5 +1,5 @@
 import { cn } from '../../utils/cn'
-import { FORMAT_BADGE_STYLES } from '../../utils/formats'
+import { FORMAT_BADGE_CATEGORY } from '../../utils/formats'
 import type { FileFormat } from '../../utils/formats'
 
 const SIZES = {
@@ -21,7 +21,8 @@ type FormatBadgeProps = {
 }
 
 /**
- * Semantic format badge. Pastel fill, deep text, pill only for format labels.
+ * Semantic format badge. Translucent fill and colored border, matching the
+ * FileFlow Desktop badge palette.
  * Interactive badges become real buttons with `aria-pressed` when selectable.
  */
 export function FormatBadge({
@@ -34,14 +35,11 @@ export function FormatBadge({
   ariaLabel,
   asButton,
 }: FormatBadgeProps) {
-  const badgeStyle =
-    FORMAT_BADGE_STYLES[format as FileFormat] ||
-    'bg-surface-sunken text-ink-muted'
+  const category = FORMAT_BADGE_CATEGORY[format as FileFormat] ?? 'neutral'
 
   const baseClasses = cn(
-    'inline-flex items-center justify-center rounded-full border border-transparent font-mono font-medium tracking-[0.08em] text-center transition-colors',
+    'format-badge inline-flex items-center justify-center rounded-md border font-mono font-medium tracking-[0.08em] text-center transition-colors',
     SIZES[size],
-    badgeStyle,
     (onClick || asButton) && 'cursor-pointer select-none',
     isSelected && 'ring-2 ring-accent ring-offset-2 ring-offset-surface',
     className,
@@ -52,6 +50,7 @@ export function FormatBadge({
       <button
         type="button"
         onClick={onClick}
+        data-cat={category}
         title={title || `Formato ${format}`}
         aria-label={ariaLabel}
         aria-pressed={isSelected}
@@ -63,7 +62,7 @@ export function FormatBadge({
   }
 
   return (
-    <span title={title} className={baseClasses}>
+    <span title={title} data-cat={category} className={baseClasses}>
       {format}
     </span>
   )

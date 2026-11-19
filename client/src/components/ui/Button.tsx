@@ -5,11 +5,11 @@ export type ButtonVariant = 'primary' | 'secondary' | 'dark' | 'ghost'
 export type ButtonSize = 'sm' | 'md' | 'lg'
 
 const BASE =
-  'inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-[color,background-color,border-color,box-shadow,transform] duration-150 disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98]'
+  'inline-flex items-center justify-center gap-2 rounded-full font-medium transition-[color,background-color,border-color,box-shadow,transform] duration-150 disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98]'
 
 const VARIANTS: Record<ButtonVariant, string> = {
   primary:
-    'border border-accent-fill bg-accent-fill text-accent-on shadow-primary hover:brightness-105',
+    'border border-accent-line bg-accent-fill text-accent-on shadow-primary hover:brightness-110',
   secondary:
     'border border-line bg-surface-raised text-ink hover:border-line-strong hover:bg-surface-sunken',
   dark: 'border border-ink bg-ink text-canvas hover:opacity-90',

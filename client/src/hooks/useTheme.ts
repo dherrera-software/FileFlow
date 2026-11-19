@@ -18,7 +18,7 @@ export function useTheme() {
   useEffect(() => {
     const root = document.documentElement
     const metaThemeColor = document.querySelector('meta[name="theme-color"]')
-    const canvas = theme === 'dark' ? '#08090a' : '#f5f5f1'
+    const canvas = theme === 'dark' ? '#0d1117' : '#f0f2f5'
 
     root.classList.toggle('dark', theme === 'dark')
     root.style.backgroundColor = canvas

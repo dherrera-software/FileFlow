@@ -10,7 +10,7 @@ export function Footer({ statusOnline = true }: { statusOnline?: boolean }) {
         <div className="flex flex-col gap-10 md:flex-row md:items-start md:justify-between">
           <div className="max-w-[280px]">
             <a href="#top" className="flex items-center gap-2.5 rounded-lg">
-              <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-accent-fill text-accent-on">
+              <span className="brand-tile size-8 shrink-0 rounded-lg">
                 <BrandMark />
               </span>
               <span className="text-[14px] font-medium tracking-[-0.01em]">{BRAND.name}</span>

@@ -36,7 +36,7 @@ type AppShellProps = {
 
 function BrandTile() {
   return (
-    <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-accent-fill text-accent-on">
+    <span className="brand-tile size-8 shrink-0 rounded-lg">
       <BrandMark />
     </span>
   )
@@ -110,7 +110,7 @@ export function AppShell({
     <div className="min-h-screen bg-canvas text-ink">
       <a
         href="#convert"
-        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[70] focus:rounded-lg focus:bg-accent-fill focus:px-4 focus:py-2 focus:text-[13px] focus:font-medium focus:text-accent-on"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[70] focus:rounded-full focus:bg-accent-fill focus:px-4 focus:py-2 focus:text-[13px] focus:font-medium focus:text-accent-on"
       >
         Saltar al conversor
       </a>
@@ -175,7 +175,7 @@ export function AppShell({
                   setMenuOpen(false)
                   onNewFile()
                 }}
-                className="flex w-full items-center justify-center gap-2 rounded-lg bg-accent-fill px-3 py-2.5 text-[13px] font-medium text-accent-on shadow-primary transition-colors hover:brightness-105 active:scale-[0.98]"
+                className="flex w-full items-center justify-center gap-2 rounded-full bg-accent-fill px-3 py-2.5 text-[13px] font-medium text-accent-on shadow-primary transition-colors hover:brightness-110 active:scale-[0.98]"
               >
                 <FilePlus2 className="size-4" aria-hidden="true" />
                 Nuevo archivo
@@ -197,10 +197,10 @@ export function AppShell({
                         onClick={() => setMenuOpen(false)}
                         aria-current={isActive ? 'location' : undefined}
                         className={cn(
-                          'flex items-center gap-2.5 rounded-lg px-2.5 py-2.5 text-[13px] transition-colors',
+                          'flex items-center gap-2.5 rounded-full border px-2.5 py-2.5 text-[13px] transition-colors',
                           isActive
-                            ? 'bg-accent-soft text-accent'
-                            : 'text-ink-subtle hover:bg-surface-raised hover:text-ink',
+                            ? 'border-accent-line bg-accent-soft text-accent hover:border-accent-line'
+                            : 'border-transparent text-ink-subtle hover:border-line hover:bg-surface-raised hover:text-ink',
                         )}
                       >
                         <Icon className="size-4" aria-hidden="true" />
@@ -258,7 +258,7 @@ function Sidebar({
         <button
           type="button"
           onClick={onNewFile}
-          className="flex w-full items-center justify-center gap-2 rounded-lg bg-accent-fill px-3 py-2.5 text-[13px] font-medium text-accent-on shadow-primary transition-colors hover:brightness-105 active:scale-[0.98]"
+          className="flex w-full items-center justify-center gap-2 rounded-full bg-accent-fill px-3 py-2.5 text-[13px] font-medium text-accent-on shadow-primary transition-colors hover:brightness-110 active:scale-[0.98]"
         >
           <FilePlus2 className="size-4" aria-hidden="true" />
           Nuevo archivo
@@ -279,10 +279,10 @@ function Sidebar({
                   href={item.href}
                   aria-current={isActive ? 'location' : undefined}
                   className={cn(
-                    'relative flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] transition-colors',
+                    'relative flex items-center gap-2.5 rounded-full border px-2.5 py-2 text-[13px] transition-colors',
                     isActive
-                      ? 'bg-accent-soft text-accent'
-                      : 'text-ink-subtle hover:bg-surface-raised hover:text-ink',
+                      ? 'border-accent-line bg-accent-soft text-accent hover:border-accent-line'
+                      : 'border-transparent text-ink-subtle hover:border-line hover:bg-surface-raised hover:text-ink',
                   )}
                 >
                   {isActive && (
@@ -393,7 +393,7 @@ function Topbar({
           <button
             type="button"
             onClick={onNewFile}
-            className="rounded-lg bg-accent-fill px-3 py-1.5 text-[12px] font-medium text-accent-on transition-colors hover:brightness-105 active:scale-[0.98] lg:hidden"
+            className="rounded-full bg-accent-fill px-3 py-1.5 text-[12px] font-medium text-accent-on shadow-primary transition-colors hover:brightness-110 active:scale-[0.98] lg:hidden"
           >
             Convertir
           </button>

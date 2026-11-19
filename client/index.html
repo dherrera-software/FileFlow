@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#08090a" />
+    <meta name="theme-color" content="#0d1117" />
     <meta
       name="description"
       content="FileFlow convierte documentos de texto, imágenes y datos entre TXT, HTML, MD, JPG, PNG, CSV, TSV, JSON y XML. Arrastra un archivo, elige el formato y convierte al instante."
@@ -15,9 +15,9 @@
           var stored = localStorage.getItem('fileflow-theme');
           var isDark = stored !== 'light';
           if (isDark) document.documentElement.classList.add('dark');
-          document.documentElement.style.backgroundColor = isDark ? '#08090a' : '#f5f5f1';
+          document.documentElement.style.backgroundColor = isDark ? '#0d1117' : '#f0f2f5';
           var metaTheme = document.querySelector('meta[name="theme-color"]');
-          if (metaTheme) metaTheme.setAttribute('content', isDark ? '#08090a' : '#f5f5f1');
+          if (metaTheme) metaTheme.setAttribute('content', isDark ? '#0d1117' : '#f0f2f5');
         } catch (_) {}
       })();
     </script>
