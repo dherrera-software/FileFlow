@@ -7,6 +7,18 @@ export const BRAND = {
 
 export const APP_VERSION = '1.0.0'
 
+/** Desktop installer served as a static asset from `client/public/downloads`. */
+export const DESKTOP_DOWNLOAD = {
+  fileName: 'FileFlow-Setup.exe',
+  url: `${import.meta.env.BASE_URL}downloads/FileFlow-Setup.exe`,
+  platform: 'Windows',
+  size: '3,5 MB',
+  version: '0.1.0',
+  repositoryUrl: 'https://github.com/dherrera-software/FileFlow-Desktop',
+} as const
+
+export const DESKTOP_RELEASES_URL = `${DESKTOP_DOWNLOAD.repositoryUrl}/releases`
+
 export const HERO = {
   eyebrow: 'Conversor universal de alta fidelidad',
   title: 'Tus archivos, en el formato correcto.',
@@ -63,6 +75,12 @@ export const FAQ_ITEMS = [
       'Documentos de texto (TXT, HTML, MD), imágenes (JPG, PNG) y datos (CSV, TSV, JSON, XML). Las conversiones disponibles son: TXT a PDF/HTML/MD, HTML a MD, MD a HTML, JPG/JPEG/PNG a PDF, CSV a JSON/XML, TSV a CSV, JSON a CSV y XML a CSV.',
   },
   {
+    enabled: true,
+    question: '¿Puedo convertir DOCX, vídeo u otros formatos avanzados?',
+    answer:
+      'La versión web solo ofrece las combinaciones compatibles con Cloudflare Workers. Para DOCX, PDF como origen, HEIC, XLSX, PPTX, audio, vídeo, ZIP y otras conversiones avanzadas, descarga FileFlow Desktop: convierte localmente, sin subir archivos y sin conexión.',
+  },
+  {
     enabled: false,
     question: '¿Puedo convertir video MP4 a GIF o extraer audio?',
     answer:
@@ -100,6 +118,14 @@ export const FOOTER_COLUMNS = [
       { label: 'Convertir un archivo', href: '#convert' },
       { label: 'Conversiones populares', href: '#converters' },
       { label: 'Cómo funciona', href: '#how-it-works' },
+      { label: 'FileFlow Desktop', href: '#desktop' },
+    ],
+  },
+  {
+    heading: 'Desarrolladores',
+    links: [
+      { label: 'Repo de FileFlow Desktop', href: DESKTOP_DOWNLOAD.repositoryUrl },
+      { label: 'Versiones y releases', href: DESKTOP_RELEASES_URL },
     ],
   },
   {

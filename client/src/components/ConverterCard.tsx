@@ -1,15 +1,18 @@
 import { ArrowRight } from 'lucide-react'
 import type { ConversionPair } from '../utils/formats'
 import { FormatBadge } from './ui/FormatBadge'
+import { cn } from '../utils/cn'
 
 type ConverterCardProps = {
   pair: ConversionPair
   onSelect: (pair: ConversionPair) => void
+  className?: string
+  wide?: boolean
 }
 
-export function ConverterCard({ pair, onSelect }: ConverterCardProps) {
+export function ConverterCard({ pair, onSelect, className, wide = false }: ConverterCardProps) {
   return (
-    <li>
+    <li className={cn(className)}>
       <button
         type="button"
         onClick={() => onSelect(pair)}
@@ -21,6 +24,12 @@ export function ConverterCard({ pair, onSelect }: ConverterCardProps) {
           <ArrowRight className="size-3.5 shrink-0 text-ink-faint" aria-hidden="true" />
           <FormatBadge format={pair.target} size="sm" className="min-w-[46px] justify-center" />
         </span>
+        {wide && (
+          <span
+            aria-hidden="true"
+            className="mx-2 hidden min-w-4 flex-1 border-t border-dashed border-line/70 sm:block"
+          />
+        )}
         <span className="inline-flex shrink-0 items-center gap-1 text-[11.5px] font-medium text-ink-subtle transition-colors group-hover:text-accent">
           Convertir
           <ArrowRight

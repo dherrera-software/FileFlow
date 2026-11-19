@@ -16,6 +16,8 @@ import { Button } from './ui/Button'
 import { FormatBadge } from './ui/FormatBadge'
 import { ConversionOptions } from './ConversionOptions'
 import { ConversionNotice, PendingConversionHint } from './ConversionNotice'
+import { DownloadDesktopButton } from './DownloadDesktopButton'
+import { DESKTOP_DOWNLOAD } from '../utils/content'
 import { useTranslation } from '../i18n/context'
 
 const SUPPORTED_FORMATS_ID = 'supported-formats'
@@ -199,6 +201,14 @@ export function FileUploadDropzone({ controller }: { controller: ConverterContro
                 {error.message}
               </p>
               <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+                {error.reason === 'unsupported-format' && (
+                  <DownloadDesktopButton
+                    size="sm"
+                    variant="secondary"
+                    showDetails={false}
+                    label={t('desktop.errorCta') || 'Descargar versión Desktop'}
+                  />
+                )}
                 <Button variant="secondary" size="sm" onClick={actions.openFilePicker}>
                   {t('common.chooseAnotherFile') || 'Elegir otro archivo'}
                 </Button>
@@ -327,6 +337,17 @@ export function FileUploadDropzone({ controller }: { controller: ConverterContro
               </li>
             ))}
           </ul>
+
+          <p className="mt-3 text-[11.5px] text-ink-subtle">
+            {t('desktop.cardHint') || '¿Necesitas convertir otros formatos?'}{' '}
+            <a
+              href={DESKTOP_DOWNLOAD.url}
+              download={DESKTOP_DOWNLOAD.fileName}
+              className="text-accent underline decoration-accent-line underline-offset-4 transition-colors hover:brightness-110"
+            >
+              {t('desktop.cardLink') || 'Descarga la versión Desktop'}
+            </a>
+          </p>
         </div>
       </div>
     </section>

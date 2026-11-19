@@ -11,11 +11,12 @@ import { Skeleton, SkeletonText } from './components/ui/Skeleton'
 
 const HeroSection = lazy(() => import('./components/HeroSection').then(m => ({ default: m.HeroSection })));
 const PopularConversions = lazy(() => import('./components/PopularConversions').then(m => ({ default: m.PopularConversions })));
+const DesktopSection = lazy(() => import('./components/DesktopSection').then(m => ({ default: m.DesktopSection })));
 const HowItWorks = lazy(() => import('./components/HowItWorks').then(m => ({ default: m.HowItWorks })));
 const PrivacySection = lazy(() => import('./components/PrivacySection').then(m => ({ default: m.PrivacySection })));
 const FaqSection = lazy(() => import('./components/FaqSection').then(m => ({ default: m.FaqSection })));
 
-const SECTION_IDS = ['convert', 'converters', 'how-it-works', 'privacy', 'faq'] as const
+const SECTION_IDS = ['convert', 'converters', 'desktop', 'how-it-works', 'privacy', 'faq'] as const
 
 function HeroFallback() {
   return (
@@ -75,6 +76,7 @@ export default function App() {
         <main id="top" className="app-ground relative min-h-[calc(100vh-60px)]">
           <Suspense fallback={<HeroFallback />}><HeroSection controller={converter} /></Suspense>
           <Suspense fallback={<PopularFallback />}><PopularConversions onSelectPair={converter.actions.requestConversion} /></Suspense>
+          <Suspense fallback={<SectionFallback />}><DesktopSection /></Suspense>
           <Suspense fallback={<SectionFallback />}><HowItWorks /></Suspense>
           <Suspense fallback={<SectionFallback />}><PrivacySection onSelectPair={converter.actions.requestConversion} /></Suspense>
           <Suspense fallback={<SectionFallback />}><FaqSection /></Suspense>

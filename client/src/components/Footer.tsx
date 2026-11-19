@@ -18,7 +18,7 @@ export function Footer({ statusOnline = true }: { statusOnline?: boolean }) {
             <p className="mt-3 text-[12.5px] leading-[1.7] text-ink-subtle">{BRAND.tagline}</p>
           </div>
 
-          <nav aria-label="Enlaces del pie de página" className="grid grid-cols-2 gap-10">
+          <nav aria-label="Enlaces del pie de página" className="grid grid-cols-2 gap-10 sm:grid-cols-3">
             {FOOTER_COLUMNS.map((column) => (
               <div key={column.heading}>
                 <h2 className="font-mono text-[10px] font-medium uppercase tracking-[0.16em] text-ink-subtle">
@@ -29,6 +29,8 @@ export function Footer({ statusOnline = true }: { statusOnline?: boolean }) {
                     <li key={link.label}>
                       <a
                         href={link.href}
+                        target={link.href.startsWith('http') ? '_blank' : undefined}
+                        rel={link.href.startsWith('http') ? 'noopener noreferrer' : undefined}
                         className="relative inline-block text-ink-muted transition-colors after:absolute after:bottom-0 after:left-0 after:h-px after:w-0 after:bg-accent after:transition-all after:duration-200 hover:text-ink hover:after:w-full"
                       >
                         {link.label}

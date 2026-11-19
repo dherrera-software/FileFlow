@@ -388,7 +388,7 @@ export function validateFile(file: File, limits?: { maxFileSizeBytes: number; ma
     return {
       ok: false,
       reason: 'unsupported-format',
-      message: `${named} no es un formato compatible. FileFlow admite documentos de texto (TXT, HTML, MD), imágenes (JPG, PNG) y datos (CSV, TSV, JSON, XML).`,
+      message: `${named} no es compatible con el conversor web. FileFlow Desktop sí puede convertirlo (documentos, imágenes, audio, vídeo y más) sin subir tus archivos: descárgalo desde la sección «Desktop».`,
     }
   }
 

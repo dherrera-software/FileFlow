@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import {
   ChevronRight,
+  Download,
   FileInput,
   FilePlus2,
   HelpCircle,
@@ -21,6 +22,7 @@ import { BrandMark } from './ui/BrandMark'
 const NAV_ITEMS = [
   { section: 'convert', href: '#convert', label: 'Conversor', icon: FileInput },
   { section: 'converters', href: '#converters', label: 'Conversiones', icon: LayoutGrid },
+  { section: 'desktop', href: '#desktop', label: 'Desktop', icon: Download },
   { section: 'how-it-works', href: '#how-it-works', label: 'Cómo funciona', icon: Workflow },
   { section: 'privacy', href: '#privacy', label: 'Privacidad', icon: ShieldCheck },
   { section: 'faq', href: '#faq', label: 'FAQ', icon: HelpCircle },

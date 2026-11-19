@@ -148,3 +148,22 @@ Asegúrate de haber creado la variable `VITE_API_BASE_URL` como se indica en la 
 - **Causa**: Los cambios no afectaron archivos en `server/`, `pnpm-lock.yaml` o `pnpm-workspace.yaml`.
 - **Solución**:
   - El workflow solo se ejecuta cuando cambian archivos del backend. Puedes ejecutarlo manualmente desde la pestaña **Actions**.
+
+---
+
+## 5. Instalador de FileFlow Desktop
+
+El instalador de escritorio se publica como un archivo estático más del frontend:
+
+1. El binario vive en `client/public/downloads/FileFlow-Setup.exe` (~3,5 MB, Windows).
+2. Vite lo copia a `client/dist/downloads/` durante `pnpm build:client`.
+3. `actions/upload-pages-artifact@v3` publica todo `client/dist`, por lo que **no hay que modificar** `.github/workflows/deploy-client.yml`.
+4. La URL pública es `https://<TU_USUARIO>.github.io/<REPO>/downloads/FileFlow-Setup.exe`. El frontend calcula la ruta con `import.meta.env.BASE_URL`, así que funciona igual en desarrollo local y en GitHub Pages.
+
+### Actualizar el instalador
+
+- Sustituye el exe por la nueva versión en `client/public/downloads/`.
+- Ajusta `version`, `size` y `fileName` en `DESKTOP_DOWNLOAD` (`client/src/utils/content.ts`) si han cambiado.
+- El enlace para desarrolladores apunta a https://github.com/dherrera-software/FileFlow-Desktop y el de versiones a https://github.com/dherrera-software/FileFlow-Desktop/releases.
+
+> GitHub Pages admite hasta 100 MB por archivo; el instalador actual está muy por debajo de ese límite.

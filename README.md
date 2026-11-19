@@ -26,6 +26,16 @@ Conversor de archivos centrado en conversiones 100% compatibles con **Cloudflare
 
 > Formatos como DOCX, PDF como origen, RTF, ODT, EPUB, WEBP, HEIC, GIF, BMP, TIFF, SVG, XLSX, XLS, ODS, PPTX, PPT, ODP, audio y video no están disponibles en el Worker actual y permanecen ocultos en el frontend. Algunas conversiones de datos implementadas en `workerConversionService.ts` (por ejemplo JSON→TSV/XML, CSV→TSV o TSV→JSON) siguen bloqueadas por la matriz de validación del backend, por lo que tampoco se muestran.
 
+## 🖥️ FileFlow Desktop
+
+Para las conversiones avanzadas que el Worker no puede procesar, la web ofrece la app de escritorio como alternativa:
+
+- **Instalador:** `https://<TU_USUARIO>.github.io/FileFlow/downloads/FileFlow-Setup.exe` (Windows, ~3,5 MB, v0.1.0), servido como archivo estático desde `client/public/downloads/`.
+- **Código fuente:** https://github.com/dherrera-software/FileFlow-Desktop
+- **Releases:** https://github.com/dherrera-software/FileFlow-Desktop/releases
+
+La sección «Desktop» del frontend, el enlace del footer «Desarrolladores» y el aviso al subir un formato no soportado apuntan a estos recursos. Para publicar una nueva versión del instalador, sustituye el exe en `client/public/downloads/` y actualiza `DESKTOP_DOWNLOAD` en `client/src/utils/content.ts`.
+
 ---
 
 ## 🚀 Inicio Rápido

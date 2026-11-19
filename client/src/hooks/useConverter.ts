@@ -9,6 +9,7 @@ import { useFileLimits } from './useFileLimits'
 export type FileError = {
   fileName: string
   message: string
+  reason?: 'unsupported-format' | 'too-large' | 'empty'
 }
 
 /**
@@ -68,7 +69,7 @@ export function useConverter() {
           'message' in validation && typeof validation.message === 'string'
             ? validation.message
             : 'Ese archivo no se puede convertir.'
-        setError({ fileName: incoming.name, message })
+        setError({ fileName: incoming.name, message, reason: validation.reason })
         setConversionError(null)
         return
       }
