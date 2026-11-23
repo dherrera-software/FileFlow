@@ -30,11 +30,21 @@ Conversor de archivos centrado en conversiones 100% compatibles con **Cloudflare
 
 Para las conversiones avanzadas que el Worker no puede procesar, la web ofrece la app de escritorio como alternativa:
 
-- **Instalador:** `https://<TU_USUARIO>.github.io/FileFlow/downloads/FileFlow-Setup.exe` (Windows, ~3,5 MB, v0.1.0), servido como archivo estático desde `client/public/downloads/`.
+- **Instalador:** `FileFlow-Setup.exe` (Windows, 3,6 MB, v0.2.0-beta), servido como archivo estático desde `client/public/downloads/`.
 - **Código fuente:** https://github.com/dherrera-software/FileFlow-Desktop
 - **Releases:** https://github.com/dherrera-software/FileFlow-Desktop/releases
 
 La sección «Desktop» del frontend, el enlace del footer «Desarrolladores» y el aviso al subir un formato no soportado apuntan a estos recursos. Para publicar una nueva versión del instalador, sustituye el exe en `client/public/downloads/` y actualiza `DESKTOP_DOWNLOAD` en `client/src/utils/content.ts`.
+
+---
+
+## 💬 Comunidad y Feedback (Cloudflare D1)
+
+FileFlow incluye una sección de comentarios y sugerencias en `/feedback` (y `#//feedback`):
+- **Base de datos:** Cloudflare D1 (`fileflow-db`) vinculada al Worker.
+- **Autenticación ligera:** Validación de correo Gmail y creación de usuario comunitario (`@username`).
+- **Administración segura:** Permite resolver y eliminar sugerencias/problemas reportados. La validación de permisos de administración se ejecuta exclusivamente del lado del servidor mediante el secreto cifrado `ADMIN_EMAIL` en Cloudflare Workers, protegiendo todos los datos sensibles.
+- **Optimización de recursos:** Diseñado bajo los límites gratuitos de Cloudflare Workers (caché con `stale-while-revalidate`, rate limiting de 30s por comentario y paginación configurable).
 
 ---
 

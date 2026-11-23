@@ -1,5 +1,26 @@
 # DEV_LOG — FileFlow
 
+## 2026-11-23 · Feedback Cloudflare D1, Identidad de Marca y Refactorización
+
+- **Comunidad y Feedback (`/feedback`)**:
+  - Implementación de ruta dedicada independiente para opiniones y sugerencias.
+  - Integración con base de datos Cloudflare D1 (`fileflow-db`, ID `8041a088-6b45-49b2-896e-bc08931bc4e7`).
+  - Validación de conexión vía Gmail y creación de identificador `@username`.
+  - Panel de administración seguro con secreto cifrado `ADMIN_EMAIL` en Cloudflare Workers para moderar/resolver incidencias sin exponer datos sensibles en el cliente.
+  - Paginación dinámica (5, 10, 20, 50) y selector de filtros por categoría.
+- **Identidad de Marca & Favicons**:
+  - Reemplazo del isotipo por el nuevo icono oficial: squircle degradado FileFlow (Hyper Cyan `#22d3ee` → Sky Blue `#0284c7` → Azul Eléctrico `#2563eb`) con documentos y flechas curvas de ciclo en blanco puro.
+  - Generación de suite completa de iconos: `icon.png` (1024x1024), `icon-512.png`, `icon-192.png`, `apple-touch-icon.png`, `favicon-64x64.png`, `favicon-32x32.png`, `favicon-16x16.png`, `favicon.ico` y `favicon.svg`.
+- **Navegación Fluida & Corrección UTF-8**:
+  - Corrección de listeners de navegación en `App.tsx` y `AppShell.tsx` para permitir desplazamiento suave a secciones (`#desktop`, `#converters`, `#faq`, etc.) sin reseteos al top.
+  - Saneamiento de caracteres con tilde en español a codificación UTF-8 estricta.
+- **Refactorización de Código (Límite < 500 líneas)**:
+  - Extracción modular de `FeedbackSection` en subcomponentes (`FeedbackAuthModal`, `FeedbackForm`, `CommentCard`, `CommentFeedHeader`, `GoogleLogo`, `types/feedback`).
+  - Extracción de estilos de insignias a `client/src/styles/format-badges.css` importado limpiamente en `index.css`.
+  - Todos los archivos del proyecto cumplen la regla de estar por debajo de las 500 líneas.
+- **Actualización FileFlow Desktop**:
+  - Binario v0.2.0-beta (3.6 MB) alojado en `client/public/downloads/FileFlow-Setup.exe`.
+
 ## 2026-11-06 · Sistema de diseño v2 (implementación visual)
 
 - `index.css`: tokens v2 (lima `#c8f96b` sobre casi-negro `#08090a`), tema claro

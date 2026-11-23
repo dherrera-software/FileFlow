@@ -12,8 +12,8 @@ export const DESKTOP_DOWNLOAD = {
   fileName: 'FileFlow-Setup.exe',
   url: `${import.meta.env.BASE_URL}downloads/FileFlow-Setup.exe`,
   platform: 'Windows',
-  size: '3,5 MB',
-  version: '0.1.0',
+  size: '3,6 MB',
+  version: '0.2.0-beta',
   repositoryUrl: 'https://github.com/dherrera-software/FileFlow-Desktop',
 } as const
 

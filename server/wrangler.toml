@@ -8,3 +8,9 @@ NODE_ENV = "production"
 CLIENT_URL = "https://dherrera-software.github.io/FileFlow"
 CORS_ORIGINS = "https://dherrera-software.github.io,http://localhost:5173,http://localhost:3000"
 MAX_FILE_SIZE_MB = "25"
+
+# Configuración de base de datos Cloudflare D1 (Free Tier: 5M lecturas/día, 100k escrituras/día, 5 GB almacenamiento)
+[[d1_databases]]
+binding = "DB"
+database_name = "fileflow-db"
+database_id = "8041a088-6b45-49b2-896e-bc08931bc4e7"

@@ -28,6 +28,30 @@ const NAV_ITEMS = [
   { section: 'faq', href: '#faq', label: 'FAQ', icon: HelpCircle },
 ] as const
 
+export function navigateToSection(sectionId: string) {
+  const isFeedback =
+    window.location.hash.toLowerCase().startsWith('#/feedback') ||
+    window.location.hash.toLowerCase().startsWith('#/comentarios')
+
+  if (isFeedback) {
+    window.location.hash = `#${sectionId}`
+    return
+  }
+
+  const el = document.getElementById(sectionId)
+  if (el) {
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    if (window.location.hash !== `#${sectionId}`) {
+      window.history.pushState(null, '', `#${sectionId}`)
+    }
+  } else if (sectionId === 'convert' || sectionId === 'top') {
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+    if (window.location.hash !== '#convert') {
+      window.history.pushState(null, '', '#convert')
+    }
+  }
+}
+
 type AppShellProps = {
   activeSection: string
   isOnline: boolean
@@ -148,7 +172,11 @@ export function AppShell({
             <div className="flex h-16 items-center justify-between gap-3 border-b border-line px-4">
               <a
                 href="#top"
-                onClick={() => setMenuOpen(false)}
+                onClick={(e) => {
+                  e.preventDefault()
+                  setMenuOpen(false)
+                  navigateToSection('convert')
+                }}
                 className="flex items-center gap-2.5 rounded-lg"
               >
                 <BrandTile />
@@ -175,6 +203,7 @@ export function AppShell({
                 type="button"
                 onClick={() => {
                   setMenuOpen(false)
+                  navigateToSection('convert')
                   onNewFile()
                 }}
                 className="flex w-full items-center justify-center gap-2 rounded-full bg-accent-fill px-3 py-2.5 text-[13px] font-medium text-accent-on shadow-primary transition-colors hover:brightness-110 active:scale-[0.98]"
@@ -196,12 +225,16 @@ export function AppShell({
                     <li key={item.href}>
                       <a
                         href={item.href}
-                        onClick={() => setMenuOpen(false)}
+                        onClick={(e) => {
+                          e.preventDefault()
+                          setMenuOpen(false)
+                          navigateToSection(item.section)
+                        }}
                         aria-current={isActive ? 'location' : undefined}
                         className={cn(
                           'flex items-center gap-2.5 rounded-full border px-2.5 py-2.5 text-[13px] transition-colors',
                           isActive
-                            ? 'border-accent-line bg-accent-soft text-accent hover:border-accent-line'
+                            ? 'border-accent-line bg-accent-soft text-accent'
                             : 'border-transparent text-ink-subtle hover:border-line hover:bg-surface-raised hover:text-ink',
                         )}
                       >
@@ -245,7 +278,14 @@ function Sidebar({
   return (
     <aside className="fixed inset-y-0 left-0 z-40 hidden w-[260px] flex-col border-r border-line bg-surface lg:flex">
       <div className="flex h-16 shrink-0 items-center border-b border-line px-5">
-        <a href="#top" className="flex items-center gap-2.5 rounded-lg">
+        <a
+          href="#top"
+          onClick={(e) => {
+            e.preventDefault()
+            navigateToSection('convert')
+          }}
+          className="flex items-center gap-2.5 rounded-lg"
+        >
           <BrandTile />
           <span className="flex flex-col leading-tight">
             <span className="text-[14px] font-medium tracking-[-0.01em]">{BRAND.name}</span>
@@ -259,7 +299,10 @@ function Sidebar({
       <div className="px-4 pt-5">
         <button
           type="button"
-          onClick={onNewFile}
+          onClick={() => {
+            navigateToSection('convert')
+            onNewFile()
+          }}
           className="flex w-full items-center justify-center gap-2 rounded-full bg-accent-fill px-3 py-2.5 text-[13px] font-medium text-accent-on shadow-primary transition-colors hover:brightness-110 active:scale-[0.98]"
         >
           <FilePlus2 className="size-4" aria-hidden="true" />
@@ -279,11 +322,15 @@ function Sidebar({
               <li key={item.href}>
                 <a
                   href={item.href}
+                  onClick={(e) => {
+                    e.preventDefault()
+                    navigateToSection(item.section)
+                  }}
                   aria-current={isActive ? 'location' : undefined}
                   className={cn(
                     'relative flex items-center gap-2.5 rounded-full border px-2.5 py-2 text-[13px] transition-colors',
                     isActive
-                      ? 'border-accent-line bg-accent-soft text-accent hover:border-accent-line'
+                      ? 'border-accent-line bg-accent-soft text-accent'
                       : 'border-transparent text-ink-subtle hover:border-line hover:bg-surface-raised hover:text-ink',
                   )}
                 >
@@ -348,7 +395,14 @@ function Topbar({
           <Menu className="size-4" aria-hidden="true" />
         </button>
 
-        <a href="#top" className="flex items-center gap-2 rounded-lg lg:hidden">
+        <a
+          href="#top"
+          onClick={(e) => {
+            e.preventDefault()
+            navigateToSection('convert')
+          }}
+          className="flex items-center gap-2 rounded-lg lg:hidden"
+        >
           <BrandTile />
           <span className="text-[13.5px] font-medium tracking-[-0.01em]">{BRAND.name}</span>
         </a>
