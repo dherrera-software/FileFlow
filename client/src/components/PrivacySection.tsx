@@ -87,8 +87,8 @@ export function PrivacySection({ onSelectPair }: PrivacySectionProps = {}) {
                     key={rule.label}
                     className="rounded-lg border border-line bg-surface-sunken/50 p-2.5 transition-colors hover:border-line-strong hover:bg-surface-sunken"
                   >
-                    <div className="flex flex-col gap-2 lg:flex-row lg:items-center">
-                      <div className="flex min-w-[170px] shrink-0 items-center justify-between gap-2 lg:justify-start">
+                    <div className="flex flex-col gap-2.5 md:flex-row md:items-center">
+                      <div className="flex min-w-[170px] shrink-0 items-center justify-between gap-2 md:justify-start">
                         <span className="font-mono text-[10px] font-medium uppercase tracking-[0.12em] text-ink-subtle">
                           {rule.label}
                         </span>
@@ -97,45 +97,47 @@ export function PrivacySection({ onSelectPair }: PrivacySectionProps = {}) {
                         </span>
                       </div>
 
-                      <div
-                        role="group"
-                        aria-label={`Formatos de origen para ${rule.label}`}
-                        className="flex flex-wrap items-center gap-1"
-                      >
-                        {rule.sources.map((source) => {
-                          const isSelected = source === selectedSource
-                          return (
+                      <div className="flex flex-wrap items-center gap-2">
+                        <div
+                          role="group"
+                          aria-label={`Formatos de origen para ${rule.label}`}
+                          className="flex flex-wrap items-center gap-1"
+                        >
+                          {rule.sources.map((source) => {
+                            const isSelected = source === selectedSource
+                            return (
+                              <FormatBadge
+                                key={source}
+                                format={source}
+                                isSelected={isSelected}
+                                onClick={() => handleSelectSource(rule.label, source)}
+                                title={`Seleccionar ${source} para ver sus formatos destino`}
+                                ariaLabel={`Seleccionar ${source} para ver sus formatos destino`}
+                                className={!isSelected ? 'opacity-60 hover:opacity-100' : ''}
+                              />
+                            )
+                          })}
+                        </div>
+
+                        <div className="flex shrink-0 items-center justify-center px-1 text-accent">
+                          <ArrowRight className="size-3.5" aria-hidden="true" />
+                        </div>
+
+                        <div
+                          role="group"
+                          aria-label={`Destinos compatibles desde ${selectedSource}`}
+                          className="flex min-h-[26px] flex-wrap items-center gap-1"
+                        >
+                          {targets.map((target) => (
                             <FormatBadge
-                              key={source}
-                              format={source}
-                              isSelected={isSelected}
-                              onClick={() => handleSelectSource(rule.label, source)}
-                              title={`Seleccionar ${source} para ver sus formatos destino`}
-                              ariaLabel={`Seleccionar ${source} para ver sus formatos destino`}
-                              className={!isSelected ? 'opacity-60 hover:opacity-100' : ''}
+                              key={`${selectedSource}->${target}`}
+                              format={target}
+                              onClick={() => handleTargetClick(selectedSource, target)}
+                              title={`Convertir de ${selectedSource} a ${target}`}
+                              ariaLabel={`Convertir de ${selectedSource} a ${target}`}
                             />
-                          )
-                        })}
-                      </div>
-
-                      <div className="flex shrink-0 items-center justify-center px-1 text-accent">
-                        <ArrowRight className="size-3.5" aria-hidden="true" />
-                      </div>
-
-                      <div
-                        role="group"
-                        aria-label={`Destinos compatibles desde ${selectedSource}`}
-                        className="flex min-h-[26px] flex-wrap items-center gap-1"
-                      >
-                        {targets.map((target) => (
-                          <FormatBadge
-                            key={`${selectedSource}->${target}`}
-                            format={target}
-                            onClick={() => handleTargetClick(selectedSource, target)}
-                            title={`Convertir de ${selectedSource} a ${target}`}
-                            ariaLabel={`Convertir de ${selectedSource} a ${target}`}
-                          />
-                        ))}
+                          ))}
+                        </div>
                       </div>
                     </div>
                   </div>

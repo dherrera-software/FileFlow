@@ -18,6 +18,7 @@ import { APP_VERSION, BRAND } from '../utils/content'
 import { useTheme } from '../hooks/useTheme'
 import { cn } from '../utils/cn'
 import { BrandMark } from './ui/BrandMark'
+import { navigateToSection } from '../utils/navigation'
 
 const NAV_ITEMS = [
   { section: 'convert', href: '#convert', label: 'Conversor', icon: FileInput },
@@ -27,30 +28,6 @@ const NAV_ITEMS = [
   { section: 'privacy', href: '#privacy', label: 'Privacidad', icon: ShieldCheck },
   { section: 'faq', href: '#faq', label: 'FAQ', icon: HelpCircle },
 ] as const
-
-export function navigateToSection(sectionId: string) {
-  const isFeedback =
-    window.location.hash.toLowerCase().startsWith('#/feedback') ||
-    window.location.hash.toLowerCase().startsWith('#/comentarios')
-
-  if (isFeedback) {
-    window.location.hash = `#${sectionId}`
-    return
-  }
-
-  const el = document.getElementById(sectionId)
-  if (el) {
-    el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    if (window.location.hash !== `#${sectionId}`) {
-      window.history.pushState(null, '', `#${sectionId}`)
-    }
-  } else if (sectionId === 'convert' || sectionId === 'top') {
-    window.scrollTo({ top: 0, behavior: 'smooth' })
-    if (window.location.hash !== '#convert') {
-      window.history.pushState(null, '', '#convert')
-    }
-  }
-}
 
 type AppShellProps = {
   activeSection: string
@@ -167,7 +144,7 @@ export function AppShell({
             role="dialog"
             aria-modal="true"
             aria-label="Menú de navegación"
-            className="absolute inset-y-0 left-0 flex w-[min(88vw,340px)] animate-slide-in-from-left flex-col border-r border-line bg-surface shadow-panel"
+            className="absolute inset-y-0 left-0 flex w-[min(88vw,340px)] animate-slide-in-from-left flex-col border-r border-line bg-surface shadow-panel pt-[env(safe-area-inset-top,0px)] pb-[env(safe-area-inset-bottom,0px)]"
           >
             <div className="flex h-16 items-center justify-between gap-3 border-b border-line px-4">
               <a
@@ -192,7 +169,7 @@ export function AppShell({
                 type="button"
                 onClick={() => setMenuOpen(false)}
                 aria-label="Cerrar menú"
-                className="flex size-8 items-center justify-center rounded-lg border border-line bg-surface-raised text-ink-subtle transition-colors hover:border-line-strong hover:text-ink"
+                className="flex size-9 items-center justify-center rounded-lg border border-line bg-surface-raised text-ink-subtle transition-colors hover:border-line-strong hover:text-ink active:scale-95"
               >
                 <X className="size-4" aria-hidden="true" />
               </button>
@@ -390,7 +367,7 @@ function Topbar({
           aria-label="Abrir menú de navegación"
           aria-expanded={menuOpen}
           aria-controls="mobile-navigation"
-          className="flex size-8 items-center justify-center rounded-lg border border-line bg-surface text-ink-subtle transition-colors hover:border-line-strong hover:text-ink lg:hidden"
+          className="flex size-9 items-center justify-center rounded-lg border border-line bg-surface text-ink-subtle transition-colors hover:border-line-strong hover:text-ink active:scale-95 lg:hidden"
         >
           <Menu className="size-4" aria-hidden="true" />
         </button>
@@ -437,7 +414,7 @@ function Topbar({
             onClick={toggleTheme}
             aria-label={isDark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
             title={isDark ? 'Modo claro' : 'Modo oscuro'}
-            className="flex size-8 items-center justify-center rounded-lg border border-line bg-surface text-ink-subtle transition-colors hover:border-line-strong hover:text-ink active:scale-95"
+            className="flex size-9 items-center justify-center rounded-lg border border-line bg-surface text-ink-subtle transition-colors hover:border-line-strong hover:text-ink active:scale-95"
           >
             {isDark ? (
               <Sun className="size-4" aria-hidden="true" />
@@ -449,7 +426,7 @@ function Topbar({
           <button
             type="button"
             onClick={onNewFile}
-            className="rounded-full bg-accent-fill px-3 py-1.5 text-[12px] font-medium text-accent-on shadow-primary transition-colors hover:brightness-110 active:scale-[0.98] lg:hidden"
+            className="rounded-full bg-accent-fill px-3.5 py-1.5 text-[12.5px] font-medium text-accent-on shadow-primary transition-colors hover:brightness-110 active:scale-[0.98] lg:hidden"
           >
             Convertir
           </button>

@@ -39,23 +39,32 @@ export function DownloadDesktopButton({
   const { t } = useTranslation()
 
   return (
-    <div className={cn('flex flex-wrap items-center gap-x-6 gap-y-3', className)}>
+    <div
+      className={cn(
+        'flex w-full flex-col sm:w-auto sm:flex-row sm:flex-wrap sm:items-center gap-3 sm:gap-x-6 sm:gap-y-3',
+        className,
+      )}
+    >
       <a
         href={DESKTOP_DOWNLOAD.url}
         download={DESKTOP_DOWNLOAD.fileName}
-        className={cn(BASE, VARIANTS[variant], SIZES[size])}
+        className={cn(
+          BASE,
+          VARIANTS[variant],
+          SIZES[size],
+          'w-full sm:w-auto flex flex-col sm:flex-row items-center justify-center text-center gap-1 sm:gap-2.5 py-3 sm:py-2.5 px-4',
+        )}
       >
-        <Download className="size-4 shrink-0" aria-hidden="true" />
-        <span className="whitespace-nowrap">
-          {label ?? (t('desktop.download') || 'Descargar FileFlow Desktop')}
+        <span className="inline-flex items-center gap-2">
+          <Download className="size-4 shrink-0" aria-hidden="true" />
+          <span className="font-semibold sm:font-medium">
+            {label ?? (t('desktop.download') || 'Descargar FileFlow Desktop')}
+          </span>
         </span>
         {showDetails && (
-          <>
-            <span aria-hidden="true" className="mx-0.5 h-3.5 w-px shrink-0 bg-current opacity-40" />
-            <span className="whitespace-nowrap font-mono text-[9.5px] uppercase tracking-[0.1em] opacity-75">
-              {DESKTOP_DOWNLOAD.platform} · {DESKTOP_DOWNLOAD.size} · v{DESKTOP_DOWNLOAD.version}
-            </span>
-          </>
+          <span className="font-mono text-[10px] uppercase tracking-[0.08em] opacity-80 sm:border-l sm:border-current/40 sm:pl-2.5">
+            {DESKTOP_DOWNLOAD.platform} · {DESKTOP_DOWNLOAD.size} · v{DESKTOP_DOWNLOAD.version}
+          </span>
         )}
       </a>
 
@@ -64,7 +73,7 @@ export function DownloadDesktopButton({
           href={DESKTOP_DOWNLOAD.repositoryUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex shrink-0 items-center gap-2 self-center py-1 text-[12.5px] leading-none text-ink-muted underline decoration-line underline-offset-4 transition-colors hover:text-ink"
+          className="inline-flex shrink-0 items-center justify-center sm:justify-start gap-2 py-1 text-[12.5px] leading-none text-ink-muted underline decoration-line underline-offset-4 transition-colors hover:text-ink"
         >
           <GitBranch className="size-4" aria-hidden="true" />
           {t('desktop.github') || 'Ver código en GitHub'}

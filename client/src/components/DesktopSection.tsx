@@ -75,16 +75,20 @@ export function DesktopSection() {
                 version: DESKTOP_DOWNLOAD.version,
               }) || 'Instalador para Windows · 3,6 MB · versión 0.2.0-beta.'}
             </p>
+
+            <p className="mt-3 block text-[11.5px] leading-[1.5] text-ink-subtle sm:hidden">
+              📱 <span className="font-medium text-ink">¿Estás en móvil o tablet?</span> La aplicación de escritorio es para PC con Windows. Desde tu móvil puedes convertir tus archivos directamente usando el conversor web gratuito de arriba.
+            </p>
           </div>
 
           <div className="w-full min-w-0 xl:col-span-7">
-            <div className="grid w-full items-stretch gap-5 sm:grid-cols-2 xl:grid-cols-3">
+            <div className="grid w-full items-stretch gap-4 sm:gap-5 sm:grid-cols-2 xl:grid-cols-3">
               {benefits.map(({ icon: Icon, title, body }) => (
                 <div key={title} className="flex h-full w-full flex-col rounded-xl border border-line bg-surface-raised p-5">
-                  <span className="flex size-8 items-center justify-center rounded-lg border border-line bg-surface text-accent">
-                    <Icon className="size-4" aria-hidden="true" />
+                  <span className="flex size-9 items-center justify-center rounded-xl border border-accent-line bg-accent-soft text-accent">
+                    <Icon className="size-4.5" aria-hidden="true" />
                   </span>
-                  <h3 className="mt-3 text-[13px] font-medium text-ink">{title}</h3>
+                  <h3 className="mt-3 text-[13.5px] font-medium text-ink">{title}</h3>
                   <p className="mt-1.5 text-[12px] leading-[1.6] text-ink-subtle">{body}</p>
                 </div>
               ))}

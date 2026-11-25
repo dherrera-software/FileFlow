@@ -46,7 +46,7 @@ export function CommentFeedHeader({
               type="button"
               onClick={() => onSelectFilter(filter)}
               className={cn(
-                'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11.5px] font-medium transition-colors',
+                'inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11.5px] font-medium transition-colors active:scale-95',
                 selectedFilter === filter
                   ? 'border border-accent-line bg-accent text-accent-on'
                   : 'border border-line bg-surface-raised text-ink-subtle hover:border-line-strong hover:text-ink',
@@ -60,7 +60,7 @@ export function CommentFeedHeader({
       </div>
 
       {/* Selector de cantidad a mostrar */}
-      <div className="flex items-center gap-1.5 text-[11.5px] text-ink-subtle">
+      <div className="flex flex-wrap items-center gap-1.5 text-[11.5px] text-ink-subtle">
         <span>Mostrar:</span>
         {[5, 10, 20, 50].map((qty) => (
           <button
@@ -68,10 +68,10 @@ export function CommentFeedHeader({
             type="button"
             onClick={() => onSelectLimit(qty)}
             className={cn(
-              'rounded-md px-2 py-0.5 font-mono text-[11px] font-medium transition-colors',
+              'min-w-[28px] rounded-md px-2 py-1 font-mono text-[11px] font-medium transition-colors active:scale-95',
               visibleLimit === qty
                 ? 'bg-accent text-accent-on'
-                : 'border border-line bg-surface text-ink-subtle hover:text-ink',
+                : 'border border-line bg-surface text-ink-subtle hover:border-line-strong hover:text-ink',
             )}
           >
             {qty}

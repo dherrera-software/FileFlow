@@ -230,8 +230,14 @@ export function FileUploadDropzone({ controller }: { controller: ConverterContro
                   handleKeyActivate()
                 }
               }}
+              onClick={(e) => {
+                const target = e.target as HTMLElement
+                if (!target.closest('button') && !target.closest('a') && !target.closest('input')) {
+                  actions.openFilePicker()
+                }
+              }}
               className={cn(
-                'dropzone-panel flex flex-col items-center px-5 py-8 text-center sm:px-7 sm:py-10',
+                'dropzone-panel flex cursor-pointer flex-col items-center px-4 py-7 text-center sm:px-7 sm:py-10',
                 isDragging && 'is-dragging',
               )}
             >
@@ -250,10 +256,10 @@ export function FileUploadDropzone({ controller }: { controller: ConverterContro
                 )}
               </span>
 
-              <p className="mt-4 text-[16px] font-medium tracking-[-0.01em] text-ink">
+              <p className="mt-4 text-[15px] font-medium tracking-[-0.01em] text-ink sm:text-[16px]">
                 {isDragging
                   ? (t('dropzone.dragDrop') || 'Suelta el archivo para seleccionarlo')
-                  : (t('dropzone.dropHere') || 'Arrastra un archivo aquí')}
+                  : (t('dropzone.dropHere') || 'Arrastra un archivo aquí o pulsa para seleccionarlo')}
               </p>
               <p
                 id="drop-instructions"

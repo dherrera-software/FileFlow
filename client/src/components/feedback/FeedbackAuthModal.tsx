@@ -105,7 +105,7 @@ export function FeedbackAuthModal({
       aria-labelledby="auth-modal-title"
       className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm bg-black/60"
     >
-      <div className="w-full max-w-[440px] rounded-2xl border border-line bg-surface p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-150">
+      <div className="w-full max-w-[440px] max-h-[90vh] overflow-y-auto rounded-2xl border border-line bg-surface p-5 sm:p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-150">
         {/* Modal Header */}
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">

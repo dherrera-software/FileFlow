@@ -84,8 +84,6 @@ export function FeedbackSection({
       checkIsAdmin(user.email).then((status) => {
         if (mounted) setIsAdmin(status)
       })
-    } else {
-      setIsAdmin(false)
     }
     return () => {
       mounted = false
@@ -210,17 +208,17 @@ export function FeedbackSection({
     >
       <div className="mx-auto max-w-[1180px] px-5 py-12 sm:px-8">
         {isStandalone && (
-          <div className="mb-8 flex items-center justify-between">
+          <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <button
               type="button"
               onClick={onBack || (() => { window.location.hash = '#/' })}
-              className="inline-flex items-center gap-2 rounded-full border border-line bg-surface-raised px-4 py-2 text-[12.5px] font-medium text-ink-muted transition-colors hover:border-line-strong hover:text-ink active:scale-[0.98]"
+              className="inline-flex w-fit items-center gap-2 rounded-full border border-line bg-surface-raised px-4 py-2 text-[12.5px] font-medium text-ink-muted transition-colors hover:border-line-strong hover:text-ink active:scale-[0.98]"
             >
               <ArrowLeft className="size-4 text-accent" />
               <span>{t('feedback.backToConverter') || 'Volver al conversor principal'}</span>
             </button>
 
-            <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-ink-subtle">
+            <span className="font-mono text-[10.5px] uppercase tracking-[0.12em] text-ink-subtle">
               FileFlow Community · Cloudflare D1
             </span>
           </div>
@@ -246,8 +244,8 @@ export function FeedbackSection({
           </div>
 
           {/* Stats pills */}
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 rounded-xl border border-line bg-surface-raised px-4 py-2.5">
+          <div className="grid grid-cols-2 sm:flex sm:items-center gap-3">
+            <div className="flex items-center gap-2 rounded-xl border border-line bg-surface-raised px-3.5 py-2.5 sm:px-4">
               <span className="flex size-7 items-center justify-center rounded-lg bg-accent-soft text-accent">
                 <Star className="size-4 fill-accent" aria-hidden="true" />
               </span>
@@ -261,7 +259,7 @@ export function FeedbackSection({
               </div>
             </div>
 
-            <div className="flex items-center gap-2 rounded-xl border border-line bg-surface-raised px-4 py-2.5">
+            <div className="flex items-center gap-2 rounded-xl border border-line bg-surface-raised px-3.5 py-2.5 sm:px-4">
               <span className="flex size-7 items-center justify-center rounded-lg bg-surface text-ink">
                 <MessageSquare className="size-4" aria-hidden="true" />
               </span>
@@ -295,7 +293,10 @@ export function FeedbackSection({
           <FeedbackForm
             user={user}
             isAdmin={isAdmin}
-            onSignOut={() => setUser(null)}
+            onSignOut={() => {
+              setUser(null)
+              setIsAdmin(false)
+            }}
             onOpenAuth={() => setIsModalOpen(true)}
             onSubmitComment={handleCommentSubmit}
           />

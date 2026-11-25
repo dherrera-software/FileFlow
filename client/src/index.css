@@ -185,9 +185,11 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    border-radius: 8px;
+    border-radius: 9px;
     overflow: hidden;
-    box-shadow: 0 0 16px rgba(34, 211, 238, 0.4), 0 2px 8px rgba(2, 132, 199, 0.3);
+    background: linear-gradient(135deg, #22d3ee 0%, #0284c7 45%, #2563eb 100%);
+    box-shadow: 0 0 16px rgba(34, 211, 238, 0.45), 0 2px 8px rgba(2, 132, 199, 0.35);
+    flex-shrink: 0;
   }
 
   /* Drop zone — dashed accent frame with a radial accent wash. */

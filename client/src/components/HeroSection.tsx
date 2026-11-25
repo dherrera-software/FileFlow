@@ -29,7 +29,7 @@ export function HeroSection({ controller }: { controller: ConverterController })
 
           <h1
             id="hero-heading"
-            className="mt-5 max-w-[13ch] text-balance text-[40px] font-medium leading-[1.03] tracking-[-0.045em] sm:text-[52px] xl:text-[58px]"
+            className="mt-5 max-w-[13ch] text-balance text-[34px] font-medium leading-[1.05] tracking-[-0.045em] sm:text-[52px] xl:text-[58px]"
           >
             {HERO.title}
           </h1>
@@ -38,13 +38,13 @@ export function HeroSection({ controller }: { controller: ConverterController })
             {HERO.description}
           </p>
 
-          <dl className="mt-8 flex flex-wrap items-stretch border-y border-line">
+          <dl className="mt-8 grid grid-cols-3 divide-x divide-line border-y border-line">
             {facts.map((fact) => (
-              <div key={fact.label} className="border-r border-line px-5 py-3.5 first:pl-0 last:border-r-0">
-                <dt className="font-mono text-[20px] font-medium leading-none tracking-[-0.02em] tabular-nums text-ink">
+              <div key={fact.label} className="px-2.5 py-3.5 text-center sm:px-5 sm:text-left">
+                <dt className="font-mono text-[18px] font-medium leading-none tracking-[-0.02em] tabular-nums text-ink sm:text-[20px]">
                   {fact.value}
                 </dt>
-                <dd className="mt-1.5 font-mono text-[9.5px] uppercase tracking-[0.14em] text-ink-subtle">
+                <dd className="mt-1.5 font-mono text-[9px] uppercase tracking-[0.12em] text-ink-subtle sm:text-[9.5px] sm:tracking-[0.14em]">
                   {fact.label}
                 </dd>
               </div>
